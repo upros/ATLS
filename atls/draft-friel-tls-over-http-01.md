@@ -97,7 +97,7 @@ informative:
 --- abstract
 
 
-Many clients need to establish connections to application services over untrusted transport layers. Communications between the clients and the application services often have to traverse across multiple transport layer hops where there may be multiple gateways or middleboxes between the clients and the application servers. Additionally, there may be a multitude of different underlying transport protocols in use across the various transport layer hops including TCP, UDP, Zigbee, Bluetooth, etc. The clients need to establish secure end-to-end connections with the application services at the application layer, and protect communications from the untrusted transport layer. This document defines a mechanism for establishing a TLS session between a client and an application service at the application layer. This enables clients and services to establish secure connections using TLS at the application layer, and treat any intermediaries that are in the communications path as untrusted transport. In short, this mechanism moves the TLS handshake up the OSI stack to the application layer.
+This document specifies how TLS sessions can be established at the application layer over untrusted transport between clients and services for the purposes of establishing secure end-to-end encrypted communications channels. Transport layer encodings for application layer TLS records are specified for HTTP and CoAP transport. Explicit identification of application layer TLS packets enables middleboxes to provide transport services and enforce suitable transport policies for these payloads, without requiring access to the unencrypted payload content. Multiple scenarios are presented identifying the need for end-to-end application layer encryption between clients and services, and the benefits of reusing the well-defined TLS protocol, and a standard TLS stack, to accomplish this are described. Application software architectures for building, and network architectures for deploying application layer TLS are outlined.
 
 
 --- middle
@@ -117,14 +117,15 @@ Related to this document, there is ongoing work across the industry to define re
 This document describes how clients and applications can leverage standard TLS software stacks to establish secure end-to-end encrypted connections at the application layer. The connections may establish TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} or DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} sessions. There are multiple advantages to reuse of existing TLS software stacks for establishment of application layer secure connections. These include:
 
 - many clients and application services already include a TLS software stack, so there is no need to include yet another software stack in the software build
-- no need to define a new cryptographic negotiation and exchange protocol between clients and services
+- no need to define a new cryptographic negotiation, authentication, and key exchange protocol between clients and services
+- provides standards based PKI mutual authentication between clients and services
 - no need to train software developers on how to use a new cryptographic protocols or libraries
 - automatically benefit from new cipher suites by simply upgrading the TLS software stack
 - automatically benefit from new features, bugfixes, etc. in TLS software stack upgrades
 
-Additionally, application services that wish to perform client certificate verification can leverage application layer TLS to do standard TLS client authentication and certificate verification even if there are multiple transport hops, middleboxes or gateways between the client and the service.
-
 This document also explicitly defines how application layer TLS connections can be established using HTTP {{?RFC7230}} {{?RFC7540}} or CoAP as transport layers. This document does not preclude the user of other transport layers, however defining how application layer TLS connections can be established over other transport layers such as [ZigBee] or [Bluetooth] is beyond the scope of this document.
+
+Explicitly identifying application layer TLS packets enables transport layer middleboxes to provide transport capabilities and enforce suitable transport policies for these payloads, without requiring access to unencrypted application data.
 
 # Terminology
 
@@ -136,11 +137,11 @@ This section describes in more detail the bootstrapping and constrained device u
 
 ## Bootstrapping Devices
 
-There are far more classes of clients being deployed on today's networks than at any time previously. This poses challenges for network administators who need to mange their network and the clients connecting to their network, and poses challenges for client vendors and client software developers who must ensure that their clients can connect to all required services.
+There are far more classes of clients being deployed on today's networks than at any time previously. This poses challenges for network administrators who need to mange their network and the clients connecting to their network, and poses challenges for client vendors and client software developers who must ensure that their clients can connect to all required services.
 
 One common example is where a client is deployed on a local domain TCP/IP network that protects its perimeter using a TLS terminating middlebox, and the client needs to establish a secure connection to a service in a different network via the middlebox. This is illustrated in {{bootstrap-device}}.
 
-Traditionally, this has been enabled by the network administrator deploying the necessary certificate authority trusted roots on the client. This can be achieved at scale using standard tools that enable the administrator to automatically push trusted roots out to all client machines in the network from a centralised domain controller. This works for for personal computers, laptops and servers running standard Operating Systems that can be centrally managed. This client management process breaks for multiple classes of clients that are being deployed today, there is no standard mechanism for configuring trusted roots on these clients, and there is no standard mechanism for these clients to securely traverse middleboxes.
+Traditionally, this has been enabled by the network administrator deploying the necessary certificate authority trusted roots on the client. This can be achieved at scale using standard tools that enable the administrator to automatically push trusted roots out to all client machines in the network from a centralized domain controller. This works for for personal computers, laptops and servers running standard Operating Systems that can be centrally managed. This client management process breaks for multiple classes of clients that are being deployed today, there is no standard mechanism for configuring trusted roots on these clients, and there is no standard mechanism for these clients to securely traverse middleboxes.
 
 ~~~
 +--------+    C->M TLS    +-----------+   M->S TLS   +---------+
@@ -209,9 +210,20 @@ End-to-end security at the application layer is increasing seen as a key require
 
 [Noise] is a framework for cryptographic protocols based on Elliptic Curve Diffie-Hellman (ECDH) key agreement, AEAD encryption, and BLAKE2 and SHA2 hash functions. Noise is currently used by WhatsApp, WireGuard, and Lightning.
 
+The current Noise protocol framework defines mechanisms for proving possession of a private key, but does not define authentication mechanisms. Section 14 "Security Considerations" of Noise states:
+~~~
+it’s up to the application to determine whether the remote party’s static public key is acceptable
+~~~
+
 ## Signal
 
 The [Signal] protocol provides end-to-end encryption and uses EdDSA signatures, Triple Diffie-Hellman handshake for shared secret establishment, and the Double Ratchet Algorithm for key management. It is used by Open Whisper Systems, WhatsApp and Google.
+
+Similar to Noise, Signal does not define an authentication mechanism. The current [X3DH] specification states in section 4.1 "Authentication":
+
+~~~
+Methods for doing this are outside the scope of this document
+~~~
 
 ## Google ALTS
 
@@ -239,7 +251,7 @@ The high level goals driving the design of this mechanism are:
 
 ## Application Architecture
 
-TLS software stacks allow application developers to 'unplug' the default network socket transport layer and read and write TLS records directly from byte buffers. This enables application developers to create application layer TLS sessions, extract the raw TLS record bytes from the bottom of the TLS stack, and transport these bytes over any suitable transport. The TLS software stacks can generate byte streams of full TLS flights which may include multiple TLS records. Additionally, TLS software stacks support iKeying MAterial Exoprters {{?RFC5705}} and allow applications to export keying material from established TLS sessions. This keying material can then be used by the application for encryption of data outside the context of the TLS session. This is illustrated in {{tls-interface}} below.
+TLS software stacks allow application developers to 'unplug' the default network socket transport layer and read and write TLS records directly from byte buffers. This enables application developers to create application layer TLS sessions, extract the raw TLS record bytes from the bottom of the TLS stack, and transport these bytes over any suitable transport. The TLS software stacks can generate byte streams of full TLS flights which may include multiple TLS records. Additionally, TLS software stacks support Keying Material Exporters {{?RFC5705}} and allow applications to export keying material from established TLS sessions. This keying material can then be used by the application for encryption of data outside the context of the TLS session. This is illustrated in {{tls-interface}} below.
 
 ~~~
                     +------------+                    +---------+
@@ -310,7 +322,7 @@ In the model illustrated in {{app-architecture-2}}, the application establishes 
 
 The choice of which application architecture to use will depend on the overall solution architecture, and the underlying transport layer or layers in use. While the choice of application architecture is outside the scope of this document, some considerations are outlined here.
 
-- for constrained devices, every single byte of payload is important. {{?I-D.mattsson-core-security-overhead}} analyses the overhead of TLS headers compared with OSCORE {{?I-D.ietf-core-object-security}} illustrating the additional overhead associated with TLS headers. It may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to establish shared encryption keys, and then trasnport encrypted data directly without the overhead of unwanted TLS record headers.
+- for constrained devices, every single byte of payload is important. {{?I-D.mattsson-core-security-overhead}} analyses the overhead of TLS headers compared with OSCORE {{?I-D.ietf-core-object-security}} illustrating the additional overhead associated with TLS headers. It may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to establish shared encryption keys, and then transport encrypted data directly without the overhead of unwanted TLS record headers.
 
 - when using HTTP as a transport layer, it may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to avoid any TLS session vs. HTTP session affinity issues.
 
@@ -318,13 +330,13 @@ The choice of which application architecture to use will depend on the overall s
 
 There are several benefits to using a standard TLS software stack to establish an application layer secure communications channel between a client and a service. These include:
 
-- no need to define a new cryptographic negotiation and exchange protocol beween client and service
+- no need to define a new cryptographic negotiation and exchange protocol between client and service
 - automatically benefit from new cipher suites by simply upgrading the TLS software stack
-- automaticaly benefit from new features, bugfixes, etc. in TLS software stack upgrades
+- automatically benefit from new features, bugfixes, etc. in TLS software stack upgrades
 
 ### ATLS Packet Identification
 
-It is recommended that ATLS packets are explicitly identified by a standardized, transport-specific identifier enabling any gateways and middleboxes to identify ATLS packets. Middleboxes have to contend with a vast number of applications and network operators have difficulty configuring middleboxes to distinguish unencrypted but not explicitly identified application data from end-to-end encrypted data. This specification aims to assist network operators by explicitly identifyng ATLS packets. The HTTP and CoAP encodings documented in {{atls-over-http-transport}} and {{atls-over-coap-transport}} explicity identify ATLS packets.
+It is recommended that ATLS packets are explicitly identified by a standardized, transport-specific identifier enabling any gateways and middleboxes to identify ATLS packets. Middleboxes have to contend with a vast number of applications and network operators have difficulty configuring middleboxes to distinguish unencrypted but not explicitly identified application data from end-to-end encrypted data. This specification aims to assist network operators by explicitly identifyng ATLS packets. The HTTP and CoAP encodings documented in {{atls-over-http-transport}} and {{atls-over-coap-transport}} explicitly identify ATLS packets.
 
 ### ATLS Session Tracking
 
@@ -344,13 +356,13 @@ Pseudo code illustrating how to read and write TLS records directly from byte bu
 
 Policy examples: 
 
-Mention that the app layer policy could be to not do ATLS if the transport layer establishe and e2e session with the peer. e.g. for HTTP use cases where there is no middlebox and cert validation passes.
+Mention that the app layer policy could be to not do ATLS if the transport layer establishes an e2e session with the peer. e.g. for HTTP use cases where there is no middlebox and cert validation passes.
 
 Mention that the client could report in the ATLS session any middlebox cert seen at the transport layer.
 
 ## Network Architecture
 
-An example network deployment is illustrated in {{coap-arch}}. It shows a constrained client connecting to an application service via an internet gateway. The client uses CoAP over DTLS to communcate with the gateway. The gateway extracts the messages the client sent over CoAP and sends these messages inside HTTP message bodies to the application service. It also shows a TLS terminator deployed in front of the application service. The client establishes a transport layer CoAP/DTLS connection with the gateway (C->G DTLS), the gateway in turn opens a transport layer TLS connection with the TLS terminator deployed in front of the service (G->T TLS). The client can ignore any certificate validation errors when it connects to the gateway. CoAP messages are transported between the client and the gateway, and HTTP messages are transported between the client and the service. Finally, application layer TLS messages are exchanged inside the CoAP and HTTP message bodies in order to establish an end-to-end TLS session between the client and the service (C->S TLS).
+An example network deployment is illustrated in {{coap-arch}}. It shows a constrained client connecting to an application service via an internet gateway. The client uses CoAP over DTLS to communicate with the gateway. The gateway extracts the messages the client sent over CoAP and sends these messages inside HTTP message bodies to the application service. It also shows a TLS terminator deployed in front of the application service. The client establishes a transport layer CoAP/DTLS connection with the gateway (C->G DTLS), the gateway in turn opens a transport layer TLS connection with the TLS terminator deployed in front of the service (G->T TLS). The client can ignore any certificate validation errors when it connects to the gateway. CoAP messages are transported between the client and the gateway, and HTTP messages are transported between the client and the service. Finally, application layer TLS messages are exchanged inside the CoAP and HTTP message bodies in order to establish an end-to-end TLS session between the client and the service (C->S TLS).
 
 ~~~
        +----------+        +----------+
@@ -428,7 +440,7 @@ Maybe need to reference the relevant sections from https://tools.ietf.org/html/d
 {{atls-session}} illustrates how an ATLS session is established using the key exporting architectural model shown in {{app-architecture-2}}. The outline is as follows:
 
 - the client creates an ATLS session object
-- the client initiaties a TLS handshake on the session
+- the client initiates a TLS handshake on the session
 - the client extracts the TLS records for the first TLS flight (the first RTT)
 - the client sends the TLS records over the transport layer to the server
 - on receipt of the TLS flight, the server creates an ATLS session object
@@ -532,7 +544,7 @@ Key exporting must be carried out as described in {{key-derivation}}.
 
 ## Application Data Encryption
 
-[editors note: I am on the fence about using {{?RFC8188}} as this hardcodes the ciphersuite to aes128gcm. IT woudl be nice to use the cipher suite negotiated as part of ATLS session establishment. ]
+[editors note: I am on the fence about using {{?RFC8188}} as this hardcodes the ciphersuite to aes128gcm. It would be nice to use the cipher suite negotiated as part of ATLS session establishment. ]
 
 ## Illustrative ATLS over HTTP Session Establishment
 
@@ -580,7 +592,7 @@ It is worthwhile comparing and contrasting ATLS with HTTP CONNECT tunneling.
 
 First, let us introduce some terminology:
 
-- HTTP Proxy: A HTTP Proxy operates at the application layer, handles HTTP CONNECT messages from clients, and opens tunnels to remote origin servers on behalf of clients. If a client establishes a tunneled TLS connection to the origin server, the HTTP Proxy does not attempt to intercept or inspect the HTTP messages excanged between the client and the server
+- HTTP Proxy: A HTTP Proxy operates at the application layer, handles HTTP CONNECT messages from clients, and opens tunnels to remote origin servers on behalf of clients. If a client establishes a tunneled TLS connection to the origin server, the HTTP Proxy does not attempt to intercept or inspect the HTTP messages exchanged between the client and the server
 
 - middlebox: A middlebox operates at the transport layer, terminates TLS connections from clients, and originates new TLS connections to services. A middlebox inspects all messages sent between clients and services. Middleboxes are generally completely transparent to applications, provided that the necessary PKI root Certificate Authority is installed in the client's trust store.
 
@@ -610,7 +622,7 @@ A more complex network topology where the network operator has both a HTTP Proxy
 Additionally, the fact that the TLS session is established between the client and the middlebox can be problematic for two reasons:
 
 - the middle box is inspecting traffic that is sent between the client and the service
-- the client may not have the necessary PKI root Certificate Authority installed that woudl enable it to validate the TLS connection to the middlebox. This is the scenario outlined in {{bootstrapping-devices}}.
+- the client may not have the necessary PKI root Certificate Authority installed that would enable it to validate the TLS connection to the middlebox. This is the scenario outlined in {{bootstrapping-devices}}.
 
 
 
@@ -650,7 +662,7 @@ In contrast to trying to force HTTP CONNECT to address a problem for which it wa
 - no changes are required to HTTP libraries or stacks
 - no additional Reverse Proxy is required to be deployed in front of origin servers
 
-It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptually sound solution, the solution still ultimately results in encrypted traffic traversing the middlebox that the middlebox cannot intercept and inspect. That is ultimately what ATLS results in - traffic traversing the middle box that the middlebox cannot intercept and inspect. Therefore, from a middlebox perspecive, the differences between the two solutions are in the areas of solution complexity and protocol semantics. It is clear that ATLS is a simpler, more elegant solution that HTTP CONNECT.
+It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptually sound solution, the solution still ultimately results in encrypted traffic traversing the middlebox that the middlebox cannot intercept and inspect. That is ultimately what ATLS results in - traffic traversing the middle box that the middlebox cannot intercept and inspect. Therefore, from a middlebox perspective, the differences between the two solutions are in the areas of solution complexity and protocol semantics. It is clear that ATLS is a simpler, more elegant solution that HTTP CONNECT.
 
 # ATLS over CoAP Transport
 
@@ -660,7 +672,7 @@ It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptua
 
 The number of RTTs that take place when establishing a TLS session depends on the version of TLS and what capabilities are enabled on the TLS software stack. For example, a 0-RTT exchange is possible with TLS1.3.
 
-If applications wish to ensure a predictable number of RTTs when establishing an application layer TLS connection, this may be achieved by configuring the TLS softwrae stack appropriately. Relevant configuration parameters for OpenSSL and Java SunJSSE stacks are outlined in the appendix.
+If applications wish to ensure a predictable number of RTTs when establishing an application layer TLS connection, this may be achieved by configuring the TLS software stack appropriately. Relevant configuration parameters for OpenSSL and Java SunJSSE stacks are outlined in the appendix.
 
 # IANA Considerations
 
@@ -677,7 +689,7 @@ And just give two examples: OpenSSL and Java SunJSSE]]
 
 # Appendix B. Pseudo Code
 
-This appendix gives both C and Java pseudo code illustrating how to inject and extract raw TLS records from a TLS software stack. Please not that this is illustrative, non-functional pseudo code that does not compile. Functioning proof-of-concept code is available on the following public respository [[ EDITOR'S NOTE: Add the URL here ]].
+This appendix gives both C and Java pseudo code illustrating how to inject and extract raw TLS records from a TLS software stack. Please not that this is illustrative, non-functional pseudo code that does not compile. Functioning proof-of-concept code is available on the following public repository [[ EDITOR'S NOTE: Add the URL here ]].
 
 ## B.1 OpenSSL
 
