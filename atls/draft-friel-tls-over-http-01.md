@@ -231,21 +231,21 @@ Google's Application Layer Transport Security [ALTS] is a mutual authentication 
 
 ## Ephemeral Diffie-Hellman Over COSE
 
-There is ongoing work to standardise {{?I-D.selander-ace-cose-ecdhe}}. This defines a ECDH SIGMA based key exchange algorithm using COSE and COBR objects.
+There is ongoing work to standardise {{?I-D.selander-ace-cose-ecdhe}}. This defines a ECDH SIGMA based authenticated key exchange algorithm using COSE and COBR objects.
 
 # ATLS Goals
 
 The high level goals driving the design of this mechanism are:
 
+- enable authenticated key exchange at the application layer by reusing existing technologies
+- ensure that ATLS packets are explicitly identified thus ensuring that any middleboxes or gateways at the transport layer are content aware
 - leverage existing TLS stacks and handshake protocols thus avoiding introducing new software or protocol dependencies in clients and applications
-- reuse existing TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} and DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} specifications as is without requiring any protocol changes
-- work with all versions of TLS
-- do not require any changes to current TLS software stacks
+- reuse existing TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} and DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} specifications as is without requiring any protocol changes or software stack changes
 - do not mandate constraints on how the TLS stack is configured or used
 - be forward compatible with future TLS versions
 - avoid introducing TLS protocol handling logic or semantics into the application layer i.e. TLS protocol knowledge and logic is handled by the TLS stack, not the application
 - ensure the client and server software implementations are as simple as possible
-- ensure that ATLS packets are explicitly identified thus ensuring that any middleboxes or gateways at the transport layer are content aware
+
 
 # Architecture Overview
 
