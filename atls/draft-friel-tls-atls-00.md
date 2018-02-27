@@ -2,7 +2,7 @@
 
 title: "Application-Layer TLS"
 abbrev: ATLS
-docname: draft-friel-tls-over-http-latest
+docname: draft-friel-tls-atls-latest
 category: std
 
 stand_alone: yes
@@ -682,16 +682,18 @@ If applications wish to ensure a predictable number of RTTs when establishing an
 
 [[ TODO ]]
 
-# Appendix A. TLS Software Stack Configuration
+--- back
+
+# TLS Software Stack Configuration
 
 [[ EDITOR'S NOTE: We could include details here on how TLS stack configuration items control the number of round trips between the client and server.  
 And just give two examples: OpenSSL and Java SunJSSE]]
 
-# Appendix B. Pseudo Code
+# Pseudo Code
 
 This appendix gives both C and Java pseudo code illustrating how to inject and extract raw TLS records from a TLS software stack. Please not that this is illustrative, non-functional pseudo code that does not compile. Functioning proof-of-concept code is available on the following public repository [[ EDITOR'S NOTE: Add the URL here ]].
 
-## B.1 OpenSSL
+## OpenSSL
 
 OpenSSL provides a set of Basic Input/Output (BIO) APIs that can be used to build a custom transport layer for TLS connections. This appendix gives pseudo code on how BIO APIs could be used to build a client application that completes a TLS handshake and exchanges application data with a service. 
 
@@ -743,7 +745,7 @@ BIO_read(bio_out, outbound, MAX);
 num_bytes = postTlsRecords(outbound, inbound);
 ~~~
 
-## B.2 Java JSSE
+## Java JSSE
 
 The Java SSLEngine class "enables secure communications using protocols such as the Secure Sockets Layer (SSL) or IETF RFC 2246 "Transport Layer Security" (TLS) protocols, but is transport independent". This pseudo code illustrates how a server could use the SSLEngine class to handle an inbound client TLS flight and generate an outbound server TLS flight response.
 
@@ -793,6 +795,6 @@ while (sslEngine.getHandshakeStatus() ==
 // Rinse and repeat!
 ~~~
 
-# Appendix C. Example ATLS Handshake
+# Example ATLS Handshake
 
 [[ EDITOR'S NOTE: For completeness,  include a simple full TLS handshake showing the B64 encoded flights in JSON, along with the HTTP request/response/headers. And also the raw hex TLS records showing protocol bits ]]
