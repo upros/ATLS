@@ -137,11 +137,11 @@ This section describes in more detail the bootstrapping and constrained device u
 
 ## Bootstrapping Devices
 
-There are far more classes of clients being deployed on today's networks than at any time previously. This poses challenges for network administrators who need to mange their network and the clients connecting to their network, and poses challenges for client vendors and client software developers who must ensure that their clients can connect to all required services.
+There are far more classes of clients being deployed on today's networks than at any time previously. This poses challenges for network administrators who need to manage their network and the clients connecting to their network, and poses challenges for client vendors and client software developers who must ensure that their clients can connect to all required services.
 
 One common example is where a client is deployed on a local domain TCP/IP network that protects its perimeter using a TLS terminating middlebox, and the client needs to establish a secure connection to a service in a different network via the middlebox. This is illustrated in {{bootstrap-device}}.
 
-Traditionally, this has been enabled by the network administrator deploying the necessary certificate authority trusted roots on the client. This can be achieved at scale using standard tools that enable the administrator to automatically push trusted roots out to all client machines in the network from a centralized domain controller. This works for for personal computers, laptops and servers running standard Operating Systems that can be centrally managed. This client management process breaks for multiple classes of clients that are being deployed today, there is no standard mechanism for configuring trusted roots on these clients, and there is no standard mechanism for these clients to securely traverse middleboxes.
+Traditionally, this has been enabled by the network administrator deploying the necessary certificate authority trusted roots on the client. This can be achieved at scale using standard tools that enable the administrator to automatically push trusted roots out to all client machines in the network from a centralized domain controller. This works for personal computers, laptops and servers running standard Operating Systems that can be centrally managed. This client management process breaks for multiple classes of clients that are being deployed today, there is no standard mechanism for configuring trusted roots on these clients, and there is no standard mechanism for these clients to securely traverse middleboxes.
 
 ~~~
 +--------+    C->M TLS    +-----------+   M->S TLS   +---------+
@@ -198,7 +198,7 @@ The gateway may not be trusted and all messages between the IoT device and the a
  {: #coap-internet title="IoT Internet Gateway"} 
 
 
-# Current Approaches to  Application Layer End-to-End Security
+# Current Approaches to Application Layer End-to-End Security
 
 End-to-end security at the application layer is increasing seen as a key requirement across multiple applications and services. Some examples of end-to-end security mechanisms are outlined here. All the solutions outlined here have some common characteristics. The solutions:
 
@@ -336,7 +336,7 @@ There are several benefits to using a standard TLS software stack to establish a
 
 ### ATLS Packet Identification
 
-It is recommended that ATLS packets are explicitly identified by a standardized, transport-specific identifier enabling any gateways and middleboxes to identify ATLS packets. Middleboxes have to contend with a vast number of applications and network operators have difficulty configuring middleboxes to distinguish unencrypted but not explicitly identified application data from end-to-end encrypted data. This specification aims to assist network operators by explicitly identifyng ATLS packets. The HTTP and CoAP encodings documented in {{atls-over-http-transport}} and {{atls-over-coap-transport}} explicitly identify ATLS packets.
+It is recommended that ATLS packets are explicitly identified by a standardized, transport-specific identifier enabling any gateways and middleboxes to identify ATLS packets. Middleboxes have to contend with a vast number of applications and network operators have difficulty configuring middleboxes to distinguish unencrypted but not explicitly identified application data from end-to-end encrypted data. This specification aims to assist network operators by explicitly identifying ATLS packets. The HTTP and CoAP encodings documented in {{atls-over-http-transport}} and {{atls-over-coap-transport}} explicitly identify ATLS packets.
 
 ### ATLS Session Tracking
 
@@ -427,13 +427,13 @@ TLS Exporter Label: application-layer-tls
 
 ## Cipher Suite Selection
 
-Application layer encryption performed outside the context of the ATLS session using exported keys should use the  cipher suite negotiated during ATLS session establishment.
+Application layer encryption performed outside the context of the ATLS session using exported keys should use the cipher suite negotiated during ATLS session establishment.
 
 ## Key Derivation
 
 {{?RFC5705}} key exporting functions allow specification of the number of bytes of keying material that should be exported from the TLS session. The application should export the exact number of bytes required to generate the necessary client and server cipher suite encryption key and IV values.
 
-Maybe need to reference the relevant sections from https://tools.ietf.org/html/draft-ietf-tls-tls13-23#section-7 and https://tools.ietf.org/html/rfc5246#section-6.3.
+[[TODO]] Maybe need to reference the relevant sections from https://tools.ietf.org/html/draft-ietf-tls-tls13-23#section-7 and https://tools.ietf.org/html/rfc5246#section-6.3.
 
 # ATLS Session Establishment
 
@@ -530,11 +530,11 @@ All message bodies containing ATLS records must set this Content-Type. This enab
 
 ## HTTP Status Codes
 
-Thsi document does not define any new HTTP status codes, and does not specify additional semantics or refine existing semantics for status codes. This is the best current practice as outlined in {{?I-D.ietf-httpbis-bcp56bis}}.
+This document does not define any new HTTP status codes, and does not specify additional semantics or refine existing semantics for status codes. This is the best current practice as outlined in {{?I-D.ietf-httpbis-bcp56bis}}.
 
 ## ATLS Session Tracking
 
-The application service needs to track multiple client application layer TLS sessions so that it can collerate TLS records received in HTTP message bodies with the appropriate TLS session. The application service should use stateful cookies {{?RFC6265}} in order to achieve this as recommended in {{?I-D.ietf-httpbis-bcp56bis}}.
+The application service needs to track multiple client application layer TLS sessions so that it can correlate TLS records received in HTTP message bodies with the appropriate TLS session. The application service should use stateful cookies {{?RFC6265}} in order to achieve this as recommended in {{?I-D.ietf-httpbis-bcp56bis}}.
 
 ## Session Establishment and Key Exporting
 
@@ -797,4 +797,4 @@ while (sslEngine.getHandshakeStatus() ==
 
 # Example ATLS Handshake
 
-[[ EDITOR'S NOTE: For completeness,  include a simple full TLS handshake showing the raw binary flights, along with the HTTP request/response/headers. And also the raw hex TLS records showing protocol bits ]]
+[[ EDITOR'S NOTE: For completeness, include a simple full TLS handshake showing the raw binary flights, along with the HTTP request/response/headers. And also the raw hex TLS records showing protocol bits ]]
