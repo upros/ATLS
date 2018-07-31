@@ -2,7 +2,7 @@
 
 title: "Application-Layer TLS"
 abbrev: ATLS
-docname: draft-friel-tls-atls-latest
+docname: draft-friel-tls-atls-01
 category: std
 
 stand_alone: yes
