@@ -721,7 +721,55 @@ It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptua
 
 # ATLS over CoAP Transport
 
-[ todo: Help needed Hannes ]
+To carry TLS messages over CoAP it is recommended to use Confirmable messages while 
+DTLS payloads may as well use non-confirmable messages. The exchange pattern in CoAP 
+uses the following style: A request from the CoAP client to the CoAP server uses a POST 
+with the ATLS message contained in the payload of the request. An ATLS response is returned
+by the CoAP server to the CoAP client in a 2.04 (Changed) message. 
+
+When DTLS messages are conveyed in CoAP over UDP then the DDoS protection offered by DTLS MAY be used instead of 
+replicating the functionality at the CoAP layer. If TLS is conveyed in CoAP over UDP then 
+DDoS protection by CoAP has to be utilized. Carrying ATLS messages in CoAP over TCP does not 
+require any additional DDoS protection. 
+
+The URI path used by ATLS is "/.well-known/atls". 
+
+{{coap-example} shows a TLS 1.3 handshake inside CoAP graphically. 
+
+~~~
+    Client    Server
+      |          |
+      +--------->| Header: POST (Code=0.02)
+      |   POST   | Uri-Path: "/.well-known/atls"
+      |          | Content-Format: application/atls
+      |          | Payload: ATLS (ClientHello)
+      |          |
+      |<---------+ Header: 2.04 Changed
+      |   2.04   | Content-Format: application/atls
+      |          | Payload: ATLS (ServerHello, 
+	  |          | {EncryptedExtensions}, {CertificateRequest*}
+      |          | {Certificate*}, {CertificateVerify*} {Finished})
+      |          |		  
+      +--------->| Header: POST (Code=0.02)
+      |   POST   | Uri-Path: "/.well-known/atls"
+      |          | Content-Format: application/atls
+      |          | Payload: ATLS ({Certificate*}, 
+	  |          | {CertificateVerify*}, {Finished})
+      |          |
+      |<---------+ Header: 2.04 Changed
+      |   2.04   |
+      |          |
+~~~
+{: #coap-example title="Transferring ATLS in CoAP "}
+
+Note that application data can already be sent by the server in the 
+second message and by the client in the third message, in case of the 
+full TLS 1.3 handshake. In case of the 0-RTT handshake application data 
+can be sent earlier. To mix different media types in the same CoAP payload
+the application/multipart-core content type is used. 
+
+Note also that CoAP blockwise transfer MAY be used if the payload size, for example due
+to the size of the certificate chain, exceeds the MTU size. 
 
 # IANA Considerations
 
