@@ -731,7 +731,7 @@ It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptua
 
 This specification re-uses the TLS and DTLS and hence the security considerations of the respective TLS/DTLS version applies. As described in {{functional-design}}, implementers need to take the policy configuration into account when applying security protection at various layers of the stack even if the same protocol is used since the communiation endpoints and the security requirements are likely going to vary.
 
-For use in the IoT environment the considerations described in {{RFC7925}} apply and other environments the guidelines in {{RFC7525}} are applicable. 
+For use in the IoT environment the considerations described in {{?RFC7925}} apply and other environments the guidelines in {{?RFC7525}} are applicable. 
 
 --- back
 
