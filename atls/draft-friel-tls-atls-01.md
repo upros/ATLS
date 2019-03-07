@@ -2,7 +2,7 @@
 
 title: "Application-Layer TLS"
 abbrev: ATLS
-docname: draft-friel-tls-atls-01
+docname: draft-friel-tls-atls-02
 category: std
 
 stand_alone: yes
@@ -354,7 +354,7 @@ It should not be necessary for the application layer to have to inspect, parse o
 
 Pseudo code illustrating how to read and write TLS records directly from byte buffers using both OpenSSL BIO functions and Java JSSE SSLEngine is given in the appendices. A blog post by [Norrell] outlines a similar approach to leveraging OpenSSL BIO functions, and Oracle publish example code for leveraging [SSLEngine].
 
-## Functional Design {#functional-design}
+## Functional Design {#functional-design-section}
 
    The functional design assumes that an authorization system has
    established operational keys for authenticating endpoints.  In a
@@ -835,7 +835,7 @@ Extractor Label Registry to correspond to this specification.
 
 # Security Considerations 
 
-This specification re-uses the TLS and DTLS and hence the security considerations of the respective TLS/DTLS version applies. As described in {{functional-design}}, implementers need to take the policy configuration into account when applying security protection at various layers of the stack even if the same protocol is used since the communiation endpoints and the security requirements are likely going to vary.
+This specification re-uses the TLS and DTLS and hence the security considerations of the respective TLS/DTLS version applies. As described in {{functional-design-section}}, implementers need to take the policy configuration into account when applying security protection at various layers of the stack even if the same protocol is used since the communiation endpoints and the security requirements are likely going to vary.
 
 For use in the IoT environment the considerations described in {{?RFC7925}} apply and other environments the guidelines in {{?RFC7525}} are applicable. 
 
