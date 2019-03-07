@@ -773,7 +773,65 @@ to the size of the certificate chain, exceeds the MTU size.
 
 # IANA Considerations
 
-[[ TODO - New Content-Type and TLS Exporter Label must be registered. ]]
+## .well-known URI Registry
+
+IANA is requested to add the well-known URI 'atls' to the Well-Known URIs
+   registry.
+
+- URI suffix: atls
+- Change controller: IETF
+- Specification document(s): [[this document]]
+- Related information: None
+
+## Media Types Registry
+
+IANA is requested to add the media type 'application/atls' to the Media Types
+registry.
+
+- Type name: application
+- Subtype name: atls
+- Required parameters: N/A
+- Optional parameters: N/A
+- Encoding considerations: binary
+- Security considerations: See Security Considerations section of this document.
+- Interoperability considerations: N/A
+- Published specification: [[this document]] (this document)
+- Applications that use this media type: Potentially any
+- Fragment identifier considerations: N/A
+- Additional information:
+   *  Magic number(s): N/A
+   *  File extension(s): N/A
+   *  Macintosh file type code(s): N/A
+- Person & email address to contact for further information: See "Authors' Addresses" section.
+- Intended usage: COMMON
+- Restrictions on usage: N/A
+- Author: See "Authors' Addresses" section.
+- Change Controller: IESG
+
+## HTTP Content-Formats Registry
+
+IANA is requested to add the media type 'application/atls+octet-stream' to the HTTP
+Content-Formats registry.
+
+- Media Type: application/atls+octet-stream
+- Encoding: binary
+- ID: TBD
+- Reference: [[this document]]  
+
+## CoAP Content-Formats Registry
+
+IANA is requested to add the media type 'application/atls' to the CoAP
+Content-Formats registry.
+
+- Media Type: application/atls
+- Encoding: binary
+- ID: TBD
+- Reference: [[this document]]  
+
+## TLS Key Extractor Label
+
+IANA is requested to register the "application-layer-tls" label in the TLS
+Extractor Label Registry to correspond to this specification.
 
 # Security Considerations 
 
