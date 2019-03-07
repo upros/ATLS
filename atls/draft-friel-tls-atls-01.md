@@ -573,12 +573,14 @@ The client sends all ATLS records to the server in the bodies of POST requests.
 
 The server sends all ATLS records to the client in the bodies of 200 OK responses to the POST requests.
 
+The URI path used by ATLS is "/.well-known/atls". 
+
 ## Content-Type Header
 
 A new Content-Type header value is defined:
 
 ~~~
-Content-type: application/atls+octet-stream
+Content-type: application/atls
 ~~~
 
 All message bodies containing ATLS records must set this Content-Type. This enables middleboxes to readily identify ATLS payloads.
@@ -606,8 +608,8 @@ Key exporting must be carried out as described in {{key-derivation}}.
 A client initiates an ATLS session by sending the first TLS flight in a POST request message body to the ATLS server.
 
 ~~~
-POST /atls
-Content-Type: application/atls+octet-stream
+POST /.well-known/atls
+Content-Type: application/atls
 
 <binary TLS client flight 1 records>
 ~~~
@@ -616,7 +618,7 @@ The server handles the request, creates an ATLS session object, and replies by i
 
 ~~~
 200 OK
-Content-Type: application/atls+octet-stream
+Content-Type: application/atls
 Set-Cookie: my-atls-cookie=my-cookie-value
 
 <binary TLS server flight 1 records>
@@ -625,8 +627,8 @@ Set-Cookie: my-atls-cookie=my-cookie-value
 The client handles the server first flight TLS records and replies with its second flight.
 
 ~~~
-POST /atls
-Content-Type: application/atls+octet-stream
+POST /.well-known/atls
+Content-Type: application/atls
 Cookie: my-atls-cookie=my-cookie-value
 
 <binary TLS client flight 2 records>
@@ -636,7 +638,7 @@ The server handles the second flight, establishes the ATLS session, and replies 
 
 ~~~
 200 OK
-Content-Type: application/atls+octet-stream
+Content-Type: application/atls
 
 <binary TLS server flight 2 records>
 ~~~
@@ -810,10 +812,10 @@ registry.
 
 ## HTTP Content-Formats Registry
 
-IANA is requested to add the media type 'application/atls+octet-stream' to the HTTP
+IANA is requested to add the media type 'application/atls' to the HTTP
 Content-Formats registry.
 
-- Media Type: application/atls+octet-stream
+- Media Type: application/atls
 - Encoding: binary
 - ID: TBD
 - Reference: [[this document]]  
