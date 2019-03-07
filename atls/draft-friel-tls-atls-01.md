@@ -112,8 +112,6 @@ There are multiple scenarios where there is a need for application layer end-to-
 
 These two scenarios are described in more detail in {{application-layer-end-to-end-security-use-cases}}.
 
-Related to this document, there is ongoing work across the industry to define requirements for end-to-end security. {{?I-D.hartke-core-e2e-security-reqs}} documents requirements for CoAP {{?RFC7252}} End-to-End Security. The Open Mobile Alliance (OMA) has published a candidate standard Lightweight Machine to Machine Requirements [LwM2M] which defines multiple requirements for end-to-end security.
-
 This document describes how clients and applications can leverage standard TLS software stacks to establish secure end-to-end encrypted connections at the application layer. The connections may establish TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} or DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} sessions. There are multiple advantages to reuse of existing TLS software stacks for establishment of application layer secure connections. These include:
 
 - many clients and application services already include a TLS software stack, so there is no need to include yet another software stack in the software build
@@ -123,12 +121,18 @@ This document describes how clients and applications can leverage standard TLS s
 - automatically benefit from new cipher suites by simply upgrading the TLS software stack
 - automatically benefit from new features, bugfixes, etc. in TLS software stack upgrades
 
-This document also explicitly defines how application layer TLS connections can be established using HTTP {{?RFC7230}} {{?RFC7540}} or CoAP as transport layers. This document does not preclude the user of other transport layers, however defining how application layer TLS connections can be established over other transport layers such as [ZigBee] or [Bluetooth] is beyond the scope of this document.
+This document also explicitly defines how application layer TLS connections can be established using HTTP {{?RFC7230}} {{?RFC7540}} or CoAP as transport layers. This document does not preclude the use of other transport layers. However, defining how application layer TLS connections can be established over other transport layers, such as [ZigBee] or [Bluetooth], is beyond the scope of this document.
 
 Explicitly identifying application layer TLS packets enables transport layer middleboxes to provide transport capabilities and enforce suitable transport policies for these payloads, without requiring access to unencrypted application data.
 
 # Terminology
 
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 {{?RFC2119}} {{?RFC8174}} when, and only when, they appear in all
+   capitals, as shown here.
+   
 Application layer TLS is referred to as ATLS throughout this document.
 
 # Application Layer End-to-End Security Use Cases
@@ -182,7 +186,7 @@ There are scenarios where the messages sent between the IoT device and the contr
 
 ### Constrained Device Connecting over the Internet
 
-A somewhat similar example has an IoT device connecting to a gateway using a suitable transport mechanism such as ZigBee, CoAP, MQTT, etc. The gateway function in turn talks HTTP over TLS (or, for example, HTTP over QUIC) to an application service over the Internet. This is illustrated in {{coap-internet}}.
+In this example an IoT device connecting to a gateway using a suitable transport mechanism, such as ZigBee, CoAP, MQTT, etc. The gateway function in turn talks HTTP over TLS (or, for example, HTTP over QUIC) to an application service over the Internet. This is illustrated in {{coap-internet}}.
 
 The gateway may not be trusted and all messages between the IoT device and the application service must be end-to-end encrypted. Similar to the previous use case, the endpoints have no guarantees about what level of transport layer security is enforced across all hops. Again, ATLS addresses these concerns.
 
@@ -212,14 +216,14 @@ End-to-end security at the application layer is increasing seen as a key require
 
 The current Noise protocol framework defines mechanisms for proving possession of a private key, but does not define authentication mechanisms. Section 14 "Security Considerations" of Noise states:
 ~~~
-it’s up to the application to determine whether the remote party’s static public key is acceptable
+it's up to the application to determine whether the remote party's static public key is acceptable
 ~~~
 
 ## Signal
 
 The [Signal] protocol provides end-to-end encryption and uses EdDSA signatures, Triple Diffie-Hellman handshake for shared secret establishment, and the Double Ratchet Algorithm for key management. It is used by Open Whisper Systems, WhatsApp and Google.
 
-Similar to Noise, Signal does not define an authentication mechanism. The current [X3DH] specification states in section 4.1 "Authentication":
+Similar to Noise, Signal does not define an authentication mechanism. The current [X3DH] specification states in Section 4.1 "Authentication":
 
 ~~~
 Methods for doing this are outside the scope of this document
@@ -231,7 +235,7 @@ Google's Application Layer Transport Security [ALTS] is a mutual authentication 
 
 ## Ephemeral Diffie-Hellman Over COSE
 
-There is ongoing work to standardise {{?I-D.selander-ace-cose-ecdhe}}. This defines a ECDH SIGMA based authenticated key exchange algorithm using COSE and COBR objects.
+There is ongoing work to standardise {{?I-D.selander-ace-cose-ecdhe}}, whiich defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
 
 # ATLS Goals
 
@@ -243,7 +247,7 @@ The high level goals driving the design of this mechanism are:
 - reuse existing TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} and DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} specifications as is without requiring any protocol changes or software stack changes
 - do not mandate constraints on how the TLS stack is configured or used
 - be forward compatible with future TLS versions
-- avoid introducing TLS protocol handling logic or semantics into the application layer i.e. TLS protocol knowledge and logic is handled by the TLS stack, not the application
+- avoid introducing TLS protocol handling logic or semantics into the application layer, i.e. TLS protocol knowledge and logic is handled by the TLS stack, not the application
 - ensure the client and server software implementations are as simple as possible
 
 
@@ -322,7 +326,7 @@ In the model illustrated in {{app-architecture-2}}, the application establishes 
 
 The choice of which application architecture to use will depend on the overall solution architecture, and the underlying transport layer or layers in use. While the choice of application architecture is outside the scope of this document, some considerations are outlined here.
 
-- for constrained devices, every single byte of payload is important. {{?I-D.mattsson-core-security-overhead}} analyses the overhead of TLS headers compared with OSCORE {{?I-D.ietf-core-object-security}} illustrating the additional overhead associated with TLS headers. It may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to establish shared encryption keys, and then transport encrypted data directly without the overhead of unwanted TLS record headers.
+- in some IoT use cases reducing the number of bytes transmitted is important. {{?I-D.mattsson-core-security-overhead}} analyses the overhead of TLS headers compared with OSCORE {{?I-D.ietf-core-object-security}} illustrating the additional overhead associated with TLS headers. The overhead varies between the different TLS versions and also between TLS and DTLS. It may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to establish shared encryption keys, and then transport encrypted data directly without the overhead of unwanted TLS record headers.
 
 - when using HTTP as a transport layer, it may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to avoid any TLS session vs. HTTP session affinity issues.
 
@@ -352,14 +356,65 @@ Pseudo code illustrating how to read and write TLS records directly from byte bu
 
 ## Functional Design
 
-[ todo: insert Hannes functional design section here including the policy layers ]
+   The functional design assumes that an authorization system has
+   established operational keys for authenticating endpoints.  In a
+   layered design, this needs to be done for each layer, which may
+   operate in two separate authorization domains. Note that 
+   {{functional-design}} shows a generic setup where TLS/DTLS is 
+   used at two layers. In some cases, use of TLS/DTLS at the 
+   application layer may be sufficient where lower layer security 
+   mechanisms provide protection of the transport-specific headers.
+   
+~~~
+          +-------------------------------------------------------+
+          |               +---+               +---+               |
+          |  +--------+   |APP|               |APP|   +--------+  |
+          |  |security|   +---+               +---+   |security|  |
+          |  |--------+     ^                   ^     |--------+  |
+          |  |policies|     |                   |     |policies|  |
+          |  |LAYER 0 |     |                   |     |LAYER 0 |  |
+          |  +--------+     v                   v     +--------+  |
+          |       +      +------+    APP    +------+      +       |
+          |       |      | TLS- |<--------->| TLS- |      |       |
+          |       +----->|SERVER|   LAYER   |CLIENT|<-----+       |
+          |              +------+           +------+              |
+          | TOP LAYER       ^                   ^                 |
+          +-----------------|-------------------|-----------------+
+          | BOTTTOM LAYER   |                   |                 |
+          |                 v                   v                 |
+          |              +------+ TRANSPORT +------+              |
+          |              | TLS- |<--------->| TLS- |              |
+          |  +--------+  |SERVER|   LAYER   |CLIENT|  +--------+  |
+          |  |security|  +------+           +------+  |security|  |
+          |  |--------+     ^                   ^     |--------+  |
+          |  |policies|     |                   |     |policies|  |
+          |  |LAYER 1 +-----+                   +-----+LAYER 1 |  |
+          |  +--------+                               +--------+  |
+          |                                                       |
+          +-------------------------------------------------------+
+~~~
+{: #functional-design title="Functional Design"}
 
-Policy examples: 
+   The security policies of one layer are distinct from those of
+   another in {{functional-design}}.  They may overlap, but that is not necessary or
+   perhaps even likely since the key exchanges at the different layers
+   terminate at different endpoints and the two often have different 
+   authorization domains.
 
-Mention that the app layer policy could be to not do ATLS if the transport layer establishes an e2e session with the peer. e.g. for HTTP use cases where there is no middlebox and cert validation passes.
-
-Mention that the client could report in the ATLS session any middlebox cert seen at the transport layer.
-
+   TLS can protect IoT device-to-gateway communications "on the wire" using
+   the "bottom layer" of {{functional-design}}, and it can protect application data
+   from the device to the application server using the "top layer." 
+   Application and transport security each have a role to play.
+   Transport security restricts access to messages on the networks,
+   notably application headers and application-layer TLS
+   restricts access to the application payloads. 
+   
+   As shown in {{functional-design}}, an application-layer message, which gets
+   encrypted and integrity protected and, in the generic case, the
+   the resulting TLS message and headers are passed to a TLS socket 
+   at the bottom layer, which may have a different security policy 
+   than the application layer.
+   
 ## Network Architecture
 
 An example network deployment is illustrated in {{coap-arch}}. It shows a constrained client connecting to an application service via an internet gateway. The client uses CoAP over DTLS to communicate with the gateway. The gateway extracts the messages the client sent over CoAP and sends these messages inside HTTP message bodies to the application service. It also shows a TLS terminator deployed in front of the application service. The client establishes a transport layer CoAP/DTLS connection with the gateway (C->G DTLS), the gateway in turn opens a transport layer TLS connection with the TLS terminator deployed in front of the service (G->T TLS). The client can ignore any certificate validation errors when it connects to the gateway. CoAP messages are transported between the client and the gateway, and HTTP messages are transported between the client and the service. Finally, application layer TLS messages are exchanged inside the CoAP and HTTP message bodies in order to establish an end-to-end TLS session between the client and the service (C->S TLS).
@@ -414,9 +469,18 @@ Another typical network deployment is illustrated in {{http-arch}}. It shows a c
 
 # Key Exporting and Application Data Encryption
 
-When solutions implement the architecture described in {{app-architecture-2}}, they leverage {{?RFC5705}} for key exporting from the ATLS session. The client and service then use the exported keys to derive shared encryption keys. The encryption keys are then used with a suitable cipher suite to encrypt application data for exchange with the peer.
+When solutions implement the architecture described in {{app-architecture-2}}, they leverage {{?RFC5705}} for key exporting from the ATLS session. The client and service then use the exported keys to derive shared encryption keys. The encryption keys are then used with a suitable ciphersuite to encrypt application data for exchange with the peer.
 
-## Key Exporter Label
+
+## Ciphersuite Selection
+
+Application layer encryption performed outside the context of the ATLS session using exported keys should use the ciphersuite negotiated during ATLS session establishment.
+
+## Key Derivation
+
+{{?RFC5705}} key exporting functions allow specification of the number of bytes of keying material that should be exported from the TLS session. The application should export the exact number of bytes required to generate the necessary client and server ciphersuite encryption key and IV values.
+
+[[TODO]] Maybe need to reference the relevant sections from https://tools.ietf.org/html/draft-ietf-tls-tls13-23#section-7 and https://tools.ietf.org/html/rfc5246#section-6.3.
 
 A new TLS Exporter Label is defined for ATLS key exporting. Its value is:
 
@@ -424,20 +488,11 @@ A new TLS Exporter Label is defined for ATLS key exporting. Its value is:
 TLS Exporter Label: application-layer-tls
 ~~~
 
-
-## Cipher Suite Selection
-
-Application layer encryption performed outside the context of the ATLS session using exported keys should use the cipher suite negotiated during ATLS session establishment.
-
-## Key Derivation
-
-{{?RFC5705}} key exporting functions allow specification of the number of bytes of keying material that should be exported from the TLS session. The application should export the exact number of bytes required to generate the necessary client and server cipher suite encryption key and IV values.
-
-[[TODO]] Maybe need to reference the relevant sections from https://tools.ietf.org/html/draft-ietf-tls-tls13-23#section-7 and https://tools.ietf.org/html/rfc5246#section-6.3.
-
 # ATLS Session Establishment
 
-{{atls-session}} illustrates how an ATLS session is established using the key exporting architectural model shown in {{app-architecture-2}}. The outline is as follows:
+{{atls-session}} illustrates how an ATLS session is established using the key exporting architectural model shown in {{app-architecture-2}}. The number of RTTs that take place when establishing a TLS session depends on the version of TLS and what capabilities are enabled on the TLS software stack. For example, a 0-RTT exchange is possible with TLS 1.3. If applications wish to ensure a predictable number of RTTs when establishing an application layer TLS connection, this may be achieved by configuring the TLS software stack appropriately.
+
+ The outline is as follows:
 
 - the client creates an ATLS session object
 - the client initiates a TLS handshake on the session
@@ -455,9 +510,9 @@ Application layer encryption performed outside the context of the ATLS session u
 ~~~
 +-------------------------------+  +-------------------------------+
 |             Client            |  |           ATLS Server         |
-+---------+---+-----+---+-------+  +-------+---+-----+---+---------+
-|  ATLS   |  | App |  |Transport|  |Transport|  | App |  |  ATLS   |
-| Session |  +-----+  |  Stack  |  |  Stack  |  +-----+  | Session |
++---------+---+-----+-+---------+  +---------+--+-----+--+---------+
+|  ATLS   |   | App | |Transport|  |Transport|  | App |  |  ATLS   |
+| Session |   +-----+ |  Stack  |  |  Stack  |  +-----+  | Session |
 +---------+     |     +---------+  +---------+     |     +---------+
      |          |         |             |          |          |
      |          |         |             |          |          |
@@ -668,12 +723,6 @@ It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptua
 
 [ todo: Help needed Hannes ]
 
-# RTT Considerations
-
-The number of RTTs that take place when establishing a TLS session depends on the version of TLS and what capabilities are enabled on the TLS software stack. For example, a 0-RTT exchange is possible with TLS1.3.
-
-If applications wish to ensure a predictable number of RTTs when establishing an application layer TLS connection, this may be achieved by configuring the TLS software stack appropriately. Relevant configuration parameters for OpenSSL and Java SunJSSE stacks are outlined in the appendix.
-
 # IANA Considerations
 
 [[ TODO - New Content-Type and TLS Exporter Label must be registered. ]]
@@ -683,11 +732,6 @@ If applications wish to ensure a predictable number of RTTs when establishing an
 [[ TODO ]]
 
 --- back
-
-# TLS Software Stack Configuration
-
-[[ EDITOR'S NOTE: We could include details here on how TLS stack configuration items control the number of round trips between the client and server.  
-And just give two examples: OpenSSL and Java SunJSSE]]
 
 # Pseudo Code
 
