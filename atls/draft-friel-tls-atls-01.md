@@ -754,7 +754,7 @@ The URI path used by ATLS is "/.well-known/atls".
       |   POST   | Uri-Path: "/.well-known/atls"
       |          | Content-Format: application/atls
       |          | Payload: ATLS ({Certificate*}, 
-	  |          | {CertificateVerify*}, {Finished})
+      |          | {CertificateVerify*}, {Finished})
       |          |
       |<---------+ Header: 2.04 Changed
       |   2.04   |
