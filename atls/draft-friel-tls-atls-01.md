@@ -467,26 +467,56 @@ Another typical network deployment is illustrated in {{http-arch}}. It shows a c
 {: #http-arch title="HTTP Middlebox Network Architecture"} 
 
 
-# Key Exporting and Application Data Encryption
+# Key Exporting and Application Data Encryption {#key-derivation}
 
-When solutions implement the architecture described in {{app-architecture-2}}, they leverage {{?RFC5705}} for key exporting from the ATLS session. The client and service then use the exported keys to derive shared encryption keys. The encryption keys are then used with a suitable ciphersuite to encrypt application data for exchange with the peer.
+When solutions implement the architecture described in {{app-architecture-2}}, 
+they leverage {{?RFC5705}} for exporting keys. When the OSCORE mode has 
+been agreed using the "oscore_connection_id" extension defined in this document,
+different keys are used for ordinary DTLS/TLS record protection and OSCORE 
+packet protection. These keys are produced using a TLS exporter {{?RFC5705}} and 
+the exporter takes three input values:
 
+- a disambiguating label string,
+- a per-association context value provided by the application using the exporter, and
+- a length value.
 
-## Ciphersuite Selection
+The label string for use with this specification is defined as 'application-layer-tls'. 
+The per-association context value is empty.   
 
-Application layer encryption performed outside the context of the ATLS session using exported keys should use the ciphersuite negotiated during ATLS session establishment.
+The length value is twice the size of the key size utilized by the negotiated 
+algorithm since the lower-half is used for the Master Secret and the upper-half 
+is used for the Master Salt. 
+ 
+For example, if a TLS/DTLS 1.2 handshake negotiated the TLS_PSK_WITH_AES_128_CCM_8 
+ciphersuite then the key size utilized by the negotiated algorithm, i.e. AES 128, is 
+128 bit. Hence, the key extractor is requested to produce 2 x 128 bit keying material. 
 
-## Key Derivation
+The following parameters are needed for use with OSCORE: 
 
-{{?RFC5705}} key exporting functions allow specification of the number of bytes of keying material that should be exported from the TLS session. The application should export the exact number of bytes required to generate the necessary client and server ciphersuite encryption key and IV values.
+ - Master Secret: The master secret is described as described above.  
 
-[[TODO]] Maybe need to reference the relevant sections from https://tools.ietf.org/html/draft-ietf-tls-tls13-23#section-7 and https://tools.ietf.org/html/rfc5246#section-6.3.
+ - Sender ID: This values is negotiated using the "oscore_connection_id" extension, 
+   as described in {{oscore_cid}}.
 
-A new TLS Exporter Label is defined for ATLS key exporting. Its value is:
+ - Recipient ID: This values is negotiated using the "oscore_connection_id" extension, 
+   as described in {{oscore_cid}}.
+ 
+ - AEAD Algorithm: This value is negotiated using the ciphersuite exchange provided by 
+   the TLS/DTLS handshake. For example, if a TLS/DTLS 1.2 handshake negotiated the 
+   TLS_PSK_WITH_AES_128_CCM_8 ciphersuite then AEAD algorithm identifier is AES_128_CCM_8, 
+   which corresponds to COSE algorithms AES-CCM-64-64-128 or AES-CCM-16-64-128,
+   whereby the former uses a 7-byte nonce and the later 13-byte nonce. Since in TLS/DTLS 
+   the nonce value is not negotiated but rather fixed, a 7-byte nonce value is assumed 
+   as a default in this document. 
+   
+ - Master Salt: The master salt is described as described above.  
 
-~~~
-TLS Exporter Label: application-layer-tls
-~~~
+-  HKDF Algorithm: This value is negotiated using the ciphersuite exchange provided by 
+   the TLS/DTLS handshake. As a default, SHA-256 is assumed as a HKDF algorithm. 
+
+- Replay Window: A default window size of 32 packets is assumed. 
+
+A future version of this specification will describe how to establish keying material and parameters for security contexts other than OSCORE. 
 
 # ATLS Session Establishment
 
@@ -598,10 +628,6 @@ The application service needs to track multiple client application layer TLS ses
 It is recommended that applications using ATLS over HTTP transport only use ATLS for session establishment and key exchange, resulting in only 2 ATLS RTTs between the client and the application service.
 
 Key exporting must be carried out as described in {{key-derivation}}.
-
-## Application Data Encryption
-
-[editors note: I am on the fence about using {{?RFC8188}} as this hardcodes the ciphersuite to aes128gcm. It would be nice to use the cipher suite negotiated as part of ATLS session establishment. ]
 
 ## Illustrative ATLS over HTTP Session Establishment
 
@@ -773,7 +799,43 @@ the application/multipart-core content type is used.
 Note also that CoAP blockwise transfer MAY be used if the payload size, for example due
 to the size of the certificate chain, exceeds the MTU size. 
 
+# The "oscore_connection_id" Extension {#oscore_cid}
+
+This document defines the "oscore_connection_id" extension, which is used in
+ClientHello and ServerHello messages. It is used only for establishing the 
+client's OSCORE Sender ID and the server's OSCORE Sender ID. The client's OSCORE Sender 
+ID maps to the CID provided by the server in the ServerHello and the server's OSCORE 
+Sender ID maps to the CID provided by the client in the ClientHello.
+
+The negotiation mechanism follows the procedure used in {{?I-D.ietf-tls-dtls-connection-id}}
+with the exception that the negotiated CIDs agreed with the "oscore_connection_id" extension 
+is only used with OSCORE and does not impact the record layer format of the DTLS/TLS 
+payloads nor the MAC calculation used by DTLS/TLS. As such, this extension can be used with 
+DTLS as well as with TLS when those protocols are used at the application layer. 
+	  
+The extension type is specified as follows.
+
+enum {
+   oscore_connection_id(TBD), (65535)
+} ExtensionType;
+
+struct {
+   opaque cid<0..2^8-1>;
+} ConnectionId;
+
+Note: This extension allows a client and a server to determine whether an OSCORE security context 
+should be established.  
+
+A future version of this specification may extend the negotiation capabilities. 
+
+
 # IANA Considerations
+
+## "oscore_connection_id" TLS extension
+
+IANA is requested to allocate an entry to the existing TLS
+"ExtensionType Values" registry, defined in {{?RFC5246}}, for
+oscore_connection_id(TBD) defined in this document.
 
 ## .well-known URI Registry
 
