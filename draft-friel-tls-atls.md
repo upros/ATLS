@@ -180,34 +180,32 @@ The ATLS mechanism defined in this document enables clients to traverse middlebo
 
 Two constrained device use cases are outlined here.
 
-### Constrained Device Connecting over a Closed Network
+### Constrained Device Connecting over a Non-IP Network
 
-There are industry examples of home smart lighting systems where the smart light bulbs connect using ZigBee to a gateway device. A controller application running on a mobile device connects to the gateway using CoAP over DTLS. The controller can then control the light bulbs by sending messages and commands via the gateway. The gateway device has full access to all messages sent between the light bulbs and the controller application.
+There are industry examples of smart lighting systems where luminaires are connected using ZigBee to a gateway. A server connects to the gateway using CoAP over DTLS. The server can control the luminaires by sending messages and commands via the gateway. The gateway has full access to all messages sent between the luminaires and the server.
 
-A generic use case similar to the smart lighting system outlined above has an IoT device talking ZigBee to a gateway, with the gateway in turn talking CoAP over DTLS to a controller application running on a mobile device. This is illustrated in {{zigbee-gateway}}.
+A generic use case similar to the smart lighting system outlined above has an IoT device talking ZigBee, Bluetooth Low Energy, LoRaWAN, NB-IoT, etc. to a gateway, with the gateway in turn talking CoAP over DTLS or another protocol to a server located in the cloud or on-premise. This is illustrated in {{zigbee-gateway}}.
 
-There are scenarios where the messages sent between the IoT device and the controller application must not be exposed to the gateway function. Additionally, the end devices (the IoT device and the controller application service) have no visibility to and no guarantees about what transport layer security and encryption is enforced across all hops end-to-end as they only have visibility to their immediate next hop. ATLS addresses these concerns.
+There are scenarios where certain messages sent between the IoT device and the server must not be exposed to the gateway function. Additionally, the two endpoints may not have visibility to and no guarantees about what transport layer security and encryption is enforced across all hops end-to-end as they only have visibility to their immediate next hop. ATLS addresses these concerns.
 
 ~~~
 
 +--------+    ZigBee     +---------+  CoAP/DTLS   +------------+
-| Device |-------------->| Gateway |------------->| Mobile App |
+| Device |-------------->| Gateway |------------->| Server     |
 +--------+               +---------+              +------------+
     ^                                                   ^
     |                                                   |
-    +--------Device to Mobile App ATLS Connection-------+
+    +--------          Device to Server          -------+
 ~~~
 {: #zigbee-gateway title="IoT Closed Network Gateway"} 
 
-
-### Constrained Device Connecting over the Internet
+### Constrained Device Connecting over IP
 
 In this example an IoT device connecting to a gateway using a suitable transport mechanism, such as ZigBee, CoAP, MQTT, etc. The gateway function in turn talks HTTP over TLS (or, for example, HTTP over QUIC) to an application service over the Internet. This is illustrated in {{coap-internet}}.
 
 The gateway may not be trusted and all messages between the IoT device and the application service must be end-to-end encrypted. Similar to the previous use case, the endpoints have no guarantees about what level of transport layer security is enforced across all hops. Again, ATLS addresses these concerns.
 
 ~~~
-
 +--------+  CoAP/DTLS    +------------------+  HTTP/TLS   +---------+
 | Device |-------------->| Internet Gateway |------------>| Service |
 +--------+               +------------------+             +---------+
@@ -249,9 +247,9 @@ Methods for doing this are outside the scope of this document
 
 Google's Application Layer Transport Security [ALTS] is a mutual authentication and transport encryption system used for securing Remote Procedure Call (RPC) communications within Google’s infrastructure. ALTS uses an ECDH handshake protocol and a record protocol containing AES encrypted payloads.
 
-## Ephemeral Diffie-Hellman Over COSE
+## Ephemeral Diffie-Hellman Over COSE (EDHOC)
 
-There is ongoing work to standardise {{I-D.selander-ace-cose-ecdhe}}, whiich defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
+There is ongoing work to standardise EDHOC {{I-D.selander-ace-cose-ecdhe}}, which defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
 
 # ATLS Goals
 
@@ -260,7 +258,7 @@ The high level goals driving the design of this mechanism are:
 - enable authenticated key exchange at the application layer by reusing existing technologies
 - ensure that ATLS packets are explicitly identified thus ensuring that any middleboxes or gateways at the transport layer are content aware
 - leverage existing TLS stacks and handshake protocols thus avoiding introducing new software or protocol dependencies in clients and applications
-- reuse existing TLS {{RFC5246}} {{RFC8446}} and DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} specifications as is without requiring any protocol changes or software stack changes
+- reuse existing TLS {{RFC5246}} {{RFC8446}} and DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} specifications
 - do not mandate constraints on how the TLS stack is configured or used
 - be forward compatible with future TLS versions
 - avoid introducing TLS protocol handling logic or semantics into the application layer, i.e. TLS protocol knowledge and logic is handled by the TLS stack, not the application
@@ -271,7 +269,7 @@ The high level goals driving the design of this mechanism are:
 
 ## Application Architecture
 
-TLS software stacks allow application developers to 'unplug' the default network socket transport layer and read and write TLS records directly from byte buffers. This enables application developers to create application layer TLS sessions, extract the raw TLS record bytes from the bottom of the TLS stack, and transport these bytes over any suitable transport. The TLS software stacks can generate byte streams of full TLS flights which may include multiple TLS records. Additionally, TLS software stacks support Keying Material Exporters {{RFC5705}} and allow applications to export keying material from established TLS sessions. This keying material can then be used by the application for encryption of data outside the context of the TLS session. This is illustrated in {{tls-interface}} below.
+TLS software stacks allow application developers to 'unplug' the default network socket transport layer and read and write TLS records directly from byte buffers. This enables application developers to use ATLS, extract the raw TLS record bytes from the bottom of the TLS stack, and transport these bytes over any suitable transport. The TLS software stacks can generate byte streams of full TLS flights, which may include multiple TLS records. Additionally, TLS software stacks support Keying Material Exporters {{RFC5705}} and allow applications to export keying material from established TLS sessions. This keying material can then be used by the application for encryption of data outside the context of the TLS session. This is illustrated in {{tls-interface}} below.
 
 ~~~
                     +------------+                    +---------+
