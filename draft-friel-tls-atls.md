@@ -362,7 +362,55 @@ The ATLS application service establishes multiple ATLS sessions with multiple cl
 
 ### ATLS Record Inspection
 
-It should not be necessary for the application layer to have to inspect, parse or understand the contents of ATLS records. No constraints are placed on the ContentType contained within the transported TLS records. The TLS records may contain handshake, application_data, alert or change_cipher_spec messages. If new ContentType messages are defined in future TLS versions, these may also be transported using this protocol.
+No constraints are placed on the ContentType contained within the transported TLS records. The TLS records may contain handshake, application_data, alert or change_cipher_spec messages. If new ContentType messages are defined in future TLS versions, these may also be transported using this protocol.
+
+### ATLS Message Routing 
+
+In many cases ATLS message routing is trival. However, there are potentially cases where the middlebox topology is quite complex and an example is shown in {{complex-routing}}. In this scenario multiple devices (Client 1-3) are connected using serial communication to a gateway (referred as middlebox A). Middlebox A communicates with another middlebox B over UDP/IP. Middlebox B then interacts with some servers in the backend using CoAP over TCP. 
+
+This scenario raises the question about the ATLS message routing. In particular, there are two questions: 
+
+* How do the middleboxes know to which IP address to address the ATLS packet? This question arises in scenarios where clients are communicating over non-IP transports. 
+
+* How are response messages demultiplexed? 
+
+In some scenarios it is feasible to pre-configure the destination IP address of outgoing packets. Another other scenarios extra information available in the ATLS message or in a shim layer has to provide the necessary information. In the case of ATLS the use of the Server Name Indicating (SNI) parameter in the TLS/DTLS ClientHello message is a possibility to give middleboxes enough information to determine the ATLS communication endpoint. This approach is also compatible with SNI encryption. 
+
+For demultiplexing again different approaches are possible. The simplest approach is to use separate source ports for each ATLS session. In our example, Middlebox A allocates a dedicated socket (with a separate source port) for outgoing UDP datagrams in order to be able to relay a response message to the respective client. Alternatively, it is possible to make use of a shim layer on top of the transport that provides this extra demultiplexing capabilities. The use of multiple UDP "sessions" (as well as different TCP sessions) has the advantage of avoiding head-of-line blocking. 
+
+~~~
+     +---------+          +---------+
+     | Server 1|----+-----| Server 2|
+     +---------+    |     +---------+
+                    |
+                    |CoAP
+                    |over
+                    |TCP/TLS
+                    |
+              +-----+-----+
+              |Middlebox B|
+              +-----------+
+                    |
+                    |
+                    |CoAP
+                    |over
+                    |UDP/DTLS
+                    |
+              +-----------+
+    +---------|Middlebox A|-----------+
+    |         +-----------+           |
+    |               |                 |
+    |CoAP           |CoAP             |CoAP
+    |over           |over             |over
+    |Serial         |Serial           |Serial
+    |               |                 |
++--------+      +--------+       +--------+
+|Client 1|      |Client 2|       |Client 3|
++--------+      +--------+       +--------+
+
+~~~
+{: #complex-routing title="Message Routing Scenario"} 
+
 
 ### Implementation
 
