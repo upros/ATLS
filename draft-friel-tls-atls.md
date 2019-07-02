@@ -1,41 +1,63 @@
 ---
-
+stand_alone: yes
+ipr: trust200902
+docname: draft-friel-tls-atls-latest
+cat: std
 title: "Application-Layer TLS"
 abbrev: ATLS
-docname: draft-friel-tls-atls-latest
-category: std
-
-stand_alone: yes
-pi: [toc, sortrefs, symrefs]
-
+coding: utf-8
+pi:
+  strict: 'yes'
+  toc: 'yes'
+  tocdepth: '2'
+  symrefs: 'yes'
+  sortrefs: 'yes'
+  compact: 'no'
+  subcompact: 'no'
+  comments: 'yes'
+  inline: 'yes'
 author:
- -
-    ins: O. Friel
+ -  ins: O. Friel
     name: Owen Friel
     org: Cisco
     email: ofriel@cisco.com
- -
-    ins: R. Barnes
+ -  ins: R. Barnes
     name: Richard Barnes
     org: Cisco
     email: rlb@ipv.sx
- -
-    ins: M. Pritikin
+ -  ins: M. Pritikin
     name: Max Pritikin
     org: Cisco
     email: pritikin@cisco.com
- -
-    ins: H. Tschofenig
+ -  ins: H. Tschofenig
     name: Hannes Tschofenig
-    org: ARM Limited
+    org: Arm Ltd.
     email: hannes.tschofenig@gmx.net
- -
-    ins: M. Baugher
+ -  ins: M. Baugher
     name: Mark Baugher
     org: Consultant
     email: mark@mbaugher.com
-
+normative:
+  RFC5705: 
+  RFC7525: 
+  RFC7540: 
+  RFC7925: 
+  RFC7230: 
+  RFC6347: 
+  RFC6265: 
+  RFC5705: 
+  RFC5246:
+  RFC2119: 
+  RFC8174: 
+  RFC8446:
+  I-D.ietf-tls-dtls13: 
+  I-D.ietf-core-object-security: 
 informative:
+  I-D.ietf-tls-dtls-connection-id:
+  I-D.ietf-httpbis-bcp56bis: 
+  I-D.selander-ace-cose-ecdhe: 
+  I-D.mattsson-lwig-security-protocol-comparison: 
+  I-D.ietf-anima-bootstrapping-keyinfra: 
   Noise:
     author:
       ins: T. Perrin
@@ -44,58 +66,50 @@ informative:
     title: Noise Protocol Framework
     date: 2017-10-04
     target: http://noiseprotocol.org/
-
   LwM2M:
     author:
       org: Open Mobile Alliance
     title: Lightweight Machine to Machine Requirements
     target: http://www.openmobilealliance.org/
     date: 2017-12-08
-
   Signal:
     author:
       org: Open Whisper Systems
     title: Signal Protocol
     target: https://signal.org/
     date: 2016
-
   ALTS:
     author:
       org: Google
     title: Application Layer Transport Security
     target: https://cloud.google.com/security/encryption-in-transit/application-layer-transport-security/
     date: 2017-12
-
   ZigBee:
     author:
       org: ZigBee Alliance
     title: ZigBee Specification
     target: http://www.zigbee.org
     date: 2012
-
   Bluetooth:
     author:
       org: Bluetooth
     title: Bluetooth Core Specification v5.0
     target: https://www.bluetooth.com/
     date: 2016
-
   Norrell:
     author:
       name: Norrell
     title: Use SSL/TLS within a different protocol with BIO pairs
     target: https://thekerneldiaries.com/2016/06/13/openssl-ssltls-within-a-different-protocol/
     date: 2016
-
   SSLEngine:
     author:
       org: Oracle
     title: SSLEngineSimpleDemo.java
     target: https://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/samples/sslengine/SSLEngineSimpleDemo.java
     date: 2004
-
+    
 --- abstract
-
 
 This document specifies how TLS sessions can be established at the application layer over untrusted transport between clients and services for the purposes of establishing secure end-to-end encrypted communications channels. Transport layer encodings for application layer TLS records are specified for HTTP and CoAP transport. Explicit identification of application layer TLS packets enables middleboxes to provide transport services and enforce suitable transport policies for these payloads, without requiring access to the unencrypted payload content. Multiple scenarios are presented identifying the need for end-to-end application layer encryption between clients and services, and the benefits of reusing the well-defined TLS protocol, and a standard TLS stack, to accomplish this are described. Application software architectures for building, and network architectures for deploying application layer TLS are outlined.
 
@@ -112,7 +126,7 @@ There are multiple scenarios where there is a need for application layer end-to-
 
 These two scenarios are described in more detail in {{application-layer-end-to-end-security-use-cases}}.
 
-This document describes how clients and applications can leverage standard TLS software stacks to establish secure end-to-end encrypted connections at the application layer. The connections may establish TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} or DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} sessions. There are multiple advantages to reuse of existing TLS software stacks for establishment of application layer secure connections. These include:
+This document describes how clients and applications can leverage standard TLS software stacks to establish secure end-to-end encrypted connections at the application layer. The connections may establish TLS {{RFC5246}} {{RFC8446}} or DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} sessions. There are multiple advantages to reuse of existing TLS software stacks for establishment of application layer secure connections. These include:
 
 - many clients and application services already include a TLS software stack, so there is no need to include yet another software stack in the software build
 - no need to define a new cryptographic negotiation, authentication, and key exchange protocol between clients and services
@@ -121,7 +135,7 @@ This document describes how clients and applications can leverage standard TLS s
 - automatically benefit from new cipher suites by simply upgrading the TLS software stack
 - automatically benefit from new features, bugfixes, etc. in TLS software stack upgrades
 
-This document also explicitly defines how application layer TLS connections can be established using HTTP {{?RFC7230}} {{?RFC7540}} or CoAP as transport layers. This document does not preclude the use of other transport layers. However, defining how application layer TLS connections can be established over other transport layers, such as [ZigBee] or [Bluetooth], is beyond the scope of this document.
+This document also explicitly defines how application layer TLS connections can be established using HTTP {{RFC7230}} {{RFC7540}} or CoAP as transport layers. This document does not preclude the use of other transport layers. However, defining how application layer TLS connections can be established over other transport layers, such as [ZigBee] or [Bluetooth], is beyond the scope of this document.
 
 Explicitly identifying application layer TLS packets enables transport layer middleboxes to provide transport capabilities and enforce suitable transport policies for these payloads, without requiring access to unencrypted application data.
 
@@ -130,7 +144,7 @@ Explicitly identifying application layer TLS packets enables transport layer mid
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
    "OPTIONAL" in this document are to be interpreted as described in BCP
-   14 {{?RFC2119}} {{?RFC8174}} when, and only when, they appear in all
+   14 {{RFC2119}} {{RFC8174}} when, and only when, they appear in all
    capitals, as shown here.
    
 Application layer TLS is referred to as ATLS throughout this document.
@@ -158,7 +172,7 @@ Traditionally, this has been enabled by the network administrator deploying the 
 {: #bootstrap-device title="Bootstrapping Devices"} 
 
 
-The ATLS mechanism defined in this document enables clients to traverse middleboxes and establish secure connections to services across network domain boundaries. The purpose of this connection may simply be to facilitate a bootstrapping process, for example {{?I-D.ietf-anima-bootstrapping-keyinfra}}, whereby the client securely discovers the local domain certificate authorities required to establish a trusted network layer TLS connection to the middlebox.
+The ATLS mechanism defined in this document enables clients to traverse middleboxes and establish secure connections to services across network domain boundaries. The purpose of this connection may simply be to facilitate a bootstrapping process, for example {{I-D.ietf-anima-bootstrapping-keyinfra}}, whereby the client securely discovers the local domain certificate authorities required to establish a trusted network layer TLS connection to the middlebox.
 
 ## Constrained Devices
 
@@ -235,7 +249,7 @@ Google's Application Layer Transport Security [ALTS] is a mutual authentication 
 
 ## Ephemeral Diffie-Hellman Over COSE
 
-There is ongoing work to standardise {{?I-D.selander-ace-cose-ecdhe}}, whiich defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
+There is ongoing work to standardise {{I-D.selander-ace-cose-ecdhe}}, whiich defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
 
 # ATLS Goals
 
@@ -244,7 +258,7 @@ The high level goals driving the design of this mechanism are:
 - enable authenticated key exchange at the application layer by reusing existing technologies
 - ensure that ATLS packets are explicitly identified thus ensuring that any middleboxes or gateways at the transport layer are content aware
 - leverage existing TLS stacks and handshake protocols thus avoiding introducing new software or protocol dependencies in clients and applications
-- reuse existing TLS {{?RFC5246}} {{?I-D.ietf-tls-tls13}} and DTLS {{?RFC6347}} {{?I-D.ietf-tls-dtls13}} specifications as is without requiring any protocol changes or software stack changes
+- reuse existing TLS {{RFC5246}} {{RFC8446}} and DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} specifications as is without requiring any protocol changes or software stack changes
 - do not mandate constraints on how the TLS stack is configured or used
 - be forward compatible with future TLS versions
 - avoid introducing TLS protocol handling logic or semantics into the application layer, i.e. TLS protocol knowledge and logic is handled by the TLS stack, not the application
@@ -255,7 +269,7 @@ The high level goals driving the design of this mechanism are:
 
 ## Application Architecture
 
-TLS software stacks allow application developers to 'unplug' the default network socket transport layer and read and write TLS records directly from byte buffers. This enables application developers to create application layer TLS sessions, extract the raw TLS record bytes from the bottom of the TLS stack, and transport these bytes over any suitable transport. The TLS software stacks can generate byte streams of full TLS flights which may include multiple TLS records. Additionally, TLS software stacks support Keying Material Exporters {{?RFC5705}} and allow applications to export keying material from established TLS sessions. This keying material can then be used by the application for encryption of data outside the context of the TLS session. This is illustrated in {{tls-interface}} below.
+TLS software stacks allow application developers to 'unplug' the default network socket transport layer and read and write TLS records directly from byte buffers. This enables application developers to create application layer TLS sessions, extract the raw TLS record bytes from the bottom of the TLS stack, and transport these bytes over any suitable transport. The TLS software stacks can generate byte streams of full TLS flights which may include multiple TLS records. Additionally, TLS software stacks support Keying Material Exporters {{RFC5705}} and allow applications to export keying material from established TLS sessions. This keying material can then be used by the application for encryption of data outside the context of the TLS session. This is illustrated in {{tls-interface}} below.
 
 ~~~
                     +------------+                    +---------+
@@ -299,7 +313,7 @@ In the model illustrated in {{app-architecture-1}}, the application sends all se
 ~~~
 {: #app-architecture-1 title="TLS Stack used for all data encryption"} 
 
-In the model illustrated in {{app-architecture-2}}, the application establishes an application layer TLS session purely for the purposes of key exchange. Therefore, the only TLS records that are sent or received by the application layer are TLS handshake records. Once the application layer TLS session is established, the application uses Keying Material Exporter {{?RFC5705}} APIs to export keying material from the TLS stack from this application layer TLS session. The application can then use these exported keys to derive suitable shared encryption keys with its peer for exchange of encrypted data. The application encrypts and decrypts sensitive data using these shared encryption keys using any suitable cryptographic library (which may be part of the same library that provides the TLS stack), and transports the encrypted data directly over the transport layer.
+In the model illustrated in {{app-architecture-2}}, the application establishes an application layer TLS session purely for the purposes of key exchange. Therefore, the only TLS records that are sent or received by the application layer are TLS handshake records. Once the application layer TLS session is established, the application uses Keying Material Exporter {{RFC5705}} APIs to export keying material from the TLS stack from this application layer TLS session. The application can then use these exported keys to derive suitable shared encryption keys with its peer for exchange of encrypted data. The application encrypts and decrypts sensitive data using these shared encryption keys using any suitable cryptographic library (which may be part of the same library that provides the TLS stack), and transports the encrypted data directly over the transport layer.
 
 ~~~
 +--------------+
@@ -326,7 +340,7 @@ In the model illustrated in {{app-architecture-2}}, the application establishes 
 
 The choice of which application architecture to use will depend on the overall solution architecture, and the underlying transport layer or layers in use. While the choice of application architecture is outside the scope of this document, some considerations are outlined here.
 
-- in some IoT use cases reducing the number of bytes transmitted is important. {{?I-D.mattsson-core-security-overhead}} analyses the overhead of TLS headers compared with OSCORE {{?I-D.ietf-core-object-security}} illustrating the additional overhead associated with TLS headers. The overhead varies between the different TLS versions and also between TLS and DTLS. It may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to establish shared encryption keys, and then transport encrypted data directly without the overhead of unwanted TLS record headers.
+- in some IoT use cases reducing the number of bytes transmitted is important. {{I-D.mattsson-lwig-security-protocol-comparison}} analyses the overhead of TLS headers compared with OSCORE {{I-D.ietf-core-object-security}} illustrating the additional overhead associated with TLS headers. The overhead varies between the different TLS versions and also between TLS and DTLS. It may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to establish shared encryption keys, and then transport encrypted data directly without the overhead of unwanted TLS record headers.
 
 - when using HTTP as a transport layer, it may be more appropriate to use the architecture defined in {{app-architecture-2}} in order to avoid any TLS session vs. HTTP session affinity issues.
 
@@ -470,10 +484,10 @@ Another typical network deployment is illustrated in {{http-arch}}. It shows a c
 # Key Exporting and Application Data Encryption {#key-derivation}
 
 When solutions implement the architecture described in {{app-architecture-2}}, 
-they leverage {{?RFC5705}} for exporting keys. When the OSCORE mode has 
+they leverage {{RFC5705}} for exporting keys. When the OSCORE mode has 
 been agreed using the "oscore_connection_id" extension defined in this document,
 different keys are used for ordinary DTLS/TLS record protection and OSCORE 
-packet protection. These keys are produced using a TLS exporter {{?RFC5705}} and 
+packet protection. These keys are produced using a TLS exporter {{RFC5705}} and 
 the exporter takes three input values:
 
 - a disambiguating label string,
@@ -617,11 +631,11 @@ All message bodies containing ATLS records must set this Content-Type. This enab
 
 ## HTTP Status Codes
 
-This document does not define any new HTTP status codes, and does not specify additional semantics or refine existing semantics for status codes. This is the best current practice as outlined in {{?I-D.ietf-httpbis-bcp56bis}}.
+This document does not define any new HTTP status codes, and does not specify additional semantics or refine existing semantics for status codes. This is the best current practice as outlined in {{I-D.ietf-httpbis-bcp56bis}}.
 
 ## ATLS Session Tracking
 
-The application service needs to track multiple client application layer TLS sessions so that it can correlate TLS records received in HTTP message bodies with the appropriate TLS session. The application service should use stateful cookies {{?RFC6265}} in order to achieve this as recommended in {{?I-D.ietf-httpbis-bcp56bis}}.
+The application service needs to track multiple client application layer TLS sessions so that it can correlate TLS records received in HTTP message bodies with the appropriate TLS session. The application service should use stateful cookies {{RFC6265}} in order to achieve this as recommended in {{I-D.ietf-httpbis-bcp56bis}}.
 
 ## Session Establishment and Key Exporting
 
@@ -807,7 +821,7 @@ client's OSCORE Sender ID and the server's OSCORE Sender ID. The client's OSCORE
 ID maps to the CID provided by the server in the ServerHello and the server's OSCORE 
 Sender ID maps to the CID provided by the client in the ClientHello.
 
-The negotiation mechanism follows the procedure used in {{?I-D.ietf-tls-dtls-connection-id}}
+The negotiation mechanism follows the procedure used in {{I-D.ietf-tls-dtls-connection-id}}
 with the exception that the negotiated CIDs agreed with the "oscore_connection_id" extension 
 is only used with OSCORE and does not impact the record layer format of the DTLS/TLS 
 payloads nor the MAC calculation used by DTLS/TLS. As such, this extension can be used with 
@@ -834,7 +848,7 @@ A future version of this specification may extend the negotiation capabilities.
 ## "oscore_connection_id" TLS extension
 
 IANA is requested to allocate an entry to the existing TLS
-"ExtensionType Values" registry, defined in {{?RFC5246}}, for
+"ExtensionType Values" registry, defined in {{RFC5246}}, for
 oscore_connection_id(TBD) defined in this document.
 
 ## .well-known URI Registry
@@ -901,7 +915,7 @@ Extractor Label Registry to correspond to this specification.
 
 This specification re-uses the TLS and DTLS and hence the security considerations of the respective TLS/DTLS version applies. As described in {{functional-design-section}}, implementers need to take the policy configuration into account when applying security protection at various layers of the stack even if the same protocol is used since the communiation endpoints and the security requirements are likely going to vary.
 
-For use in the IoT environment the considerations described in {{?RFC7925}} apply and other environments the guidelines in {{?RFC7525}} are applicable. 
+For use in the IoT environment the considerations described in {{RFC7925}} apply and other environments the guidelines in {{RFC7525}} are applicable. 
 
 --- back
 
