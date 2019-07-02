@@ -111,7 +111,9 @@ informative:
     
 --- abstract
 
-This document specifies how TLS sessions can be established at the application layer over untrusted transport between clients and services for the purposes of establishing secure end-to-end encrypted communications channels. Transport layer encodings for application layer TLS records are specified for HTTP and CoAP transport. Explicit identification of application layer TLS packets enables middleboxes to provide transport services and enforce suitable transport policies for these payloads, without requiring access to the unencrypted payload content. Multiple scenarios are presented identifying the need for end-to-end application layer encryption between clients and services, and the benefits of reusing the well-defined TLS protocol, and a standard TLS stack, to accomplish this are described. Application software architectures for building, and network architectures for deploying application layer TLS are outlined.
+This document specifies how TLS and DTLS can be used at the application layer for the purpose of establishing secure end-to-end encrypted communication security.
+
+Encodings for carrying TLS and DTLS payloads are specified for HTTP and CoAP to improve interoperability. While the use of TLS and DTLS is straight forward we present multiple deployment scenarios to illustrate the need for end-to-end application layer encryption and the benefits of reusing a widely deployed and readily available protocol. Application software architectures for building, and network architectures for deploying application layer TLS are outlined.
 
 
 --- middle
@@ -126,7 +128,7 @@ There are multiple scenarios where there is a need for application layer end-to-
 
 These two scenarios are described in more detail in {{application-layer-end-to-end-security-use-cases}}.
 
-This document describes how clients and applications can leverage standard TLS software stacks to establish secure end-to-end encrypted connections at the application layer. The connections may establish TLS {{RFC5246}} {{RFC8446}} or DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} sessions. There are multiple advantages to reuse of existing TLS software stacks for establishment of application layer secure connections. These include:
+This document describes how clients and applications can leverage standard TLS software stacks to establish secure end-to-end encrypted connections at the application layer. TLS {{RFC5246}} {{RFC8446}} or DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} can be used and this document is agnostic to the versions being used. There are multiple advantages to reuse of existing TLS software stacks for establishment of application layer secure connections. These include:
 
 - many clients and application services already include a TLS software stack, so there is no need to include yet another software stack in the software build
 - no need to define a new cryptographic negotiation, authentication, and key exchange protocol between clients and services
@@ -135,9 +137,9 @@ This document describes how clients and applications can leverage standard TLS s
 - automatically benefit from new cipher suites by simply upgrading the TLS software stack
 - automatically benefit from new features, bugfixes, etc. in TLS software stack upgrades
 
-This document also explicitly defines how application layer TLS connections can be established using HTTP {{RFC7230}} {{RFC7540}} or CoAP as transport layers. This document does not preclude the use of other transport layers. However, defining how application layer TLS connections can be established over other transport layers, such as [ZigBee] or [Bluetooth], is beyond the scope of this document.
+When TLS or DTLS is used at the application layer we refer to it as Application-Layer TLS, or ATLS. There is, however, no difference to TLS versions used over connection-oriented transports, such as TCP or SCTP. The same is true for DTLS. The difference is mainly in its use.
 
-Explicitly identifying application layer TLS packets enables transport layer middleboxes to provide transport capabilities and enforce suitable transport policies for these payloads, without requiring access to unencrypted application data.
+This document defines how ATLS can be used over HTTP {{RFC7230}} {{RFC7540}} and over CoAP. This document does not preclude the use of other transport layers. However, defining how ATLS can be established over other transport layers, such as [ZigBee] or [Bluetooth], is beyond the scope of this document.
 
 # Terminology
 
@@ -147,11 +149,11 @@ Explicitly identifying application layer TLS packets enables transport layer mid
    14 {{RFC2119}} {{RFC8174}} when, and only when, they appear in all
    capitals, as shown here.
    
-Application layer TLS is referred to as ATLS throughout this document.
+Application-Layer TLS is referred to as ATLS throughout this document.
 
 # Application Layer End-to-End Security Use Cases
 
-This section describes in more detail the bootstrapping and constrained device use cases mentioned in the introduction.
+This section describes describes a few end-to-end use cases in more detail.
 
 ## Bootstrapping Devices
 
