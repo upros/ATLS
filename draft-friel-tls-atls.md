@@ -225,8 +225,8 @@ The high level goals driving the design of this mechanism are:
 - leverage TLS stacks and handshake protocols thus avoiding introducing new software or protocol dependencies in clients and applications
 - reuse TLS {{RFC5246}} {{RFC8446}} and DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} specifications,
 - do not mandate constraints on how the TLS stack is configured or used,
-- be forward compatible with future TLS versions, and 
-- ensure that are as simple as possible.
+- be forward compatible with future TLS versions including new developments such as compact TLS {{I-D.rescorla-tls-ctls}}, and 
+- ensure that the design is as simple as possible.
 
 
 # Architecture Overview
