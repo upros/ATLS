@@ -50,6 +50,7 @@ normative:
   RFC2119: 
   RFC8174: 
   RFC8446:
+  RFC7252: 
   I-D.ietf-tls-dtls13: 
   I-D.ietf-core-object-security: 
 informative:
@@ -137,9 +138,9 @@ This document describes how clients and applications can leverage standard TLS s
 - automatically benefit from new cipher suites by simply upgrading the TLS software stack
 - automatically benefit from new features, bugfixes, etc. in TLS software stack upgrades
 
-When TLS or DTLS is used at the application layer we refer to it as Application-Layer TLS, or ATLS. There is, however, no difference to TLS versions used over connection-oriented transports, such as TCP or SCTP. The same is true for DTLS. The difference is mainly in its use.
+When TLS or DTLS is used at the application layer we refer to it as Application-Layer TLS, or ATLS. There is, however, no difference to TLS versions used over connection-oriented transports, such as TCP or SCTP. The same is true for DTLS. The difference is mainly in its use and the requirements placed on the underlying transport.
 
-This document defines how ATLS can be used over HTTP {{RFC7230}} {{RFC7540}} and over CoAP. This document does not preclude the use of other transport layers. However, defining how ATLS can be established over other transport layers, such as [ZigBee] or [Bluetooth], is beyond the scope of this document.
+This document defines how ATLS can be used over HTTP {{RFC7230}} {{RFC7540}} and over CoAP. This document does not preclude the use of other transports. However, defining how ATLS can be established over [ZigBee], [Bluetooth], etc. is beyond the scope of this document.
 
 # Terminology
 
@@ -215,54 +216,17 @@ The gateway may not be trusted and all messages between the IoT device and the a
 ~~~
  {: #coap-internet title="IoT Internet Gateway"} 
 
-
-# Current Approaches to Application Layer End-to-End Security
-
-End-to-end security at the application layer is increasing seen as a key requirement across multiple applications and services. Some examples of end-to-end security mechanisms are outlined here. All the solutions outlined here have some common characteristics. The solutions:
-
-- do not rely on transport layer security
-- define a new handshake protocol for establishment of a secure end-to-end session
-
-
-## Noise
-
-[Noise] is a framework for cryptographic protocols based on Elliptic Curve Diffie-Hellman (ECDH) key agreement, AEAD encryption, and BLAKE2 and SHA2 hash functions. Noise is currently used by WhatsApp, WireGuard, and Lightning.
-
-The current Noise protocol framework defines mechanisms for proving possession of a private key, but does not define authentication mechanisms. Section 14 "Security Considerations" of Noise states:
-~~~
-it's up to the application to determine whether the remote party's static public key is acceptable
-~~~
-
-## Signal
-
-The [Signal] protocol provides end-to-end encryption and uses EdDSA signatures, Triple Diffie-Hellman handshake for shared secret establishment, and the Double Ratchet Algorithm for key management. It is used by Open Whisper Systems, WhatsApp and Google.
-
-Similar to Noise, Signal does not define an authentication mechanism. The current [X3DH] specification states in Section 4.1 "Authentication":
-
-~~~
-Methods for doing this are outside the scope of this document
-~~~
-
-## Google ALTS
-
-Google's Application Layer Transport Security [ALTS] is a mutual authentication and transport encryption system used for securing Remote Procedure Call (RPC) communications within Google’s infrastructure. ALTS uses an ECDH handshake protocol and a record protocol containing AES encrypted payloads.
-
-## Ephemeral Diffie-Hellman Over COSE (EDHOC)
-
-There is ongoing work to standardise EDHOC {{I-D.selander-ace-cose-ecdhe}}, which defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
-
 # ATLS Goals
 
 The high level goals driving the design of this mechanism are:
 
-- enable authenticated key exchange at the application layer by reusing existing technologies
-- ensure that ATLS packets are explicitly identified thus ensuring that any middleboxes or gateways at the transport layer are content aware
-- leverage existing TLS stacks and handshake protocols thus avoiding introducing new software or protocol dependencies in clients and applications
-- reuse existing TLS {{RFC5246}} {{RFC8446}} and DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} specifications
-- do not mandate constraints on how the TLS stack is configured or used
-- be forward compatible with future TLS versions
-- avoid introducing TLS protocol handling logic or semantics into the application layer, i.e. TLS protocol knowledge and logic is handled by the TLS stack, not the application
-- ensure the client and server software implementations are as simple as possible
+- enable authenticated key exchange at the application layer by reusing existing technologies,
+- ensure that ATLS packets are explicitly identified thus ensuring that any middleboxes or gateways at the transport layer are content aware,
+- leverage TLS stacks and handshake protocols thus avoiding introducing new software or protocol dependencies in clients and applications
+- reuse TLS {{RFC5246}} {{RFC8446}} and DTLS {{RFC6347}} {{I-D.ietf-tls-dtls13}} specifications,
+- do not mandate constraints on how the TLS stack is configured or used,
+- be forward compatible with future TLS versions, and 
+- ensure that are as simple as possible.
 
 
 # Architecture Overview
@@ -529,56 +493,6 @@ Another typical network deployment is illustrated in {{http-arch}}. It shows a c
 {: #http-arch title="HTTP Middlebox Network Architecture"} 
 
 
-# Key Exporting and Application Data Encryption {#key-derivation}
-
-When solutions implement the architecture described in {{app-architecture-2}}, 
-they leverage {{RFC5705}} for exporting keys. When the OSCORE mode has 
-been agreed using the "oscore_connection_id" extension defined in this document,
-different keys are used for ordinary DTLS/TLS record protection and OSCORE 
-packet protection. These keys are produced using a TLS exporter {{RFC5705}} and 
-the exporter takes three input values:
-
-- a disambiguating label string,
-- a per-association context value provided by the application using the exporter, and
-- a length value.
-
-The label string for use with this specification is defined as 'application-layer-tls'. 
-The per-association context value is empty.   
-
-The length value is twice the size of the key size utilized by the negotiated 
-algorithm since the lower-half is used for the Master Secret and the upper-half 
-is used for the Master Salt. 
- 
-For example, if a TLS/DTLS 1.2 handshake negotiated the TLS_PSK_WITH_AES_128_CCM_8 
-ciphersuite then the key size utilized by the negotiated algorithm, i.e. AES 128, is 
-128 bit. Hence, the key extractor is requested to produce 2 x 128 bit keying material. 
-
-The following parameters are needed for use with OSCORE: 
-
- - Master Secret: The master secret is described as described above.  
-
- - Sender ID: This values is negotiated using the "oscore_connection_id" extension, 
-   as described in {{oscore_cid}}.
-
- - Recipient ID: This values is negotiated using the "oscore_connection_id" extension, 
-   as described in {{oscore_cid}}.
- 
- - AEAD Algorithm: This value is negotiated using the ciphersuite exchange provided by 
-   the TLS/DTLS handshake. For example, if a TLS/DTLS 1.2 handshake negotiated the 
-   TLS_PSK_WITH_AES_128_CCM_8 ciphersuite then AEAD algorithm identifier is AES_128_CCM_8, 
-   which corresponds to COSE algorithms AES-CCM-64-64-128 or AES-CCM-16-64-128,
-   whereby the former uses a 7-byte nonce and the later 13-byte nonce. Since in TLS/DTLS 
-   the nonce value is not negotiated but rather fixed, a 7-byte nonce value is assumed 
-   as a default in this document. 
-   
- - Master Salt: The master salt is described as described above.  
-
--  HKDF Algorithm: This value is negotiated using the ciphersuite exchange provided by 
-   the TLS/DTLS handshake. As a default, SHA-256 is assumed as a HKDF algorithm. 
-
-- Replay Window: A default window size of 32 packets is assumed. 
-
-A future version of this specification will describe how to establish keying material and parameters for security contexts other than OSCORE. 
 
 # ATLS Session Establishment
 
@@ -811,7 +725,7 @@ It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptua
 
 # ATLS over CoAP Transport
 
-To carry TLS messages over CoAP it is recommended to use Confirmable messages while 
+To carry TLS messages over CoAP {{RFC7252}} it is recommended to use Confirmable messages while 
 DTLS payloads may as well use non-confirmable messages. The exchange pattern in CoAP 
 uses the following style: A request from the CoAP client to the CoAP server uses a POST 
 with the ATLS message contained in the payload of the request. An ATLS response is returned
@@ -861,13 +775,105 @@ the application/multipart-core content type is used.
 Note also that CoAP blockwise transfer MAY be used if the payload size, for example due
 to the size of the certificate chain, exceeds the MTU size. 
 
-# The "oscore_connection_id" Extension {#oscore_cid}
+# Key Exporting and Application Data Encryption {#key-derivation}
+
+When solutions implement the architecture described in {{app-architecture-2}}, 
+they leverage {{RFC5705}} for exporting keys. This section describes how to establish 
+keying material and negotiate algorithms for OSCORE and for COSE. 
+
+## OSCORE 
+
+When the OSCORE mode has been agreed using the "oscore_connection_id" extension defined 
+in this document, different keys are used for DTLS/TLS record protection and for OSCORE 
+packet protection. These keys are produced using a TLS exporter {{RFC5705}} and 
+the exporter takes three input values:
+
+- a disambiguating label string,
+- a per-association context value provided by the application using the exporter, and
+- a length value.
+
+The label string for use with this specification is defined as 'atls-oscore'. 
+The per-association context value is empty.   
+
+The length value is twice the size of the key size utilized by the negotiated 
+algorithm since the lower-half is used for the Master Secret and the upper-half 
+is used for the Master Salt. 
+ 
+For example, if a TLS/DTLS 1.2 handshake negotiated the TLS_PSK_WITH_AES_128_CCM_8 
+ciphersuite then the key size utilized by the negotiated algorithm, i.e. AES 128, is 
+128 bit. Hence, the key extractor is requested to produce 2 x 128 bit keying material. 
+
+The following parameters are needed for use with OSCORE: 
+
+ - Master Secret: The master secret is derived as described above.  
+
+ - Sender ID: This values is negotiated using the "oscore_connection_id" extension, 
+   as described in {{oscore_cid}}.
+
+ - Recipient ID: This values is negotiated using the "oscore_connection_id" extension, 
+   as described in {{oscore_cid}}.
+ 
+ - AEAD Algorithm: This value is negotiated using the ciphersuite exchange provided by 
+   the TLS/DTLS handshake. For example, if a TLS/DTLS 1.2 handshake negotiated the 
+   TLS_PSK_WITH_AES_128_CCM_8 ciphersuite then the AEAD algorithm identifier is AES_128_CCM_8, 
+   which corresponds to two COSE algorithms, which both use AES-CCM mode with a 128-bit key, a 64-bit tag: 
+     - AES-CCM-64-64-128
+     - AES-CCM-16-64-128
+    The difference between the two is only the length of the nonce, which is 7-bytes in the 
+    former case and 13-bytes in the latter. In TLS/DTLS the nonce value is not negotiated but fixed instead.
+    {{algo-mapping}} provides the mapping between the TLS defined ciphersuite and the COSE 
+    algorithms.  
+   
+ - Master Salt: The master salt is derived as described above.  
+
+-  HKDF Algorithm: This value is negotiated using the ciphersuite exchange provided by 
+   the TLS/DTLS handshake. As a default, SHA-256 is assumed as a HKDF algorithm for algorithms 
+   using 128-bit key sizes and SHA384 for 256-bit key sizes. 
+
+- Replay Window: A default window size of 32 packets is assumed. 
+
+## COSE 
+
+The key exporting procedure for COSE is similiar to the one defined for OSCORE. 
+The label string for use with this specification is defined as 'atls-cose'. 
+The per-association context value is empty.   
+
+The length value is twice the size of the key size utilized by the negotiated 
+algorithm since the lower-half is used for the Master Secret and the upper-half 
+is used for the Master Salt. 
+
+The COSE algorithm corresponds to the ciphersuite negotiated during the TLS/DTLS handshake with
+with the mapping provided in {{algo-mapping}}. The HKDF algorithm is negotiated using the 
+the TLS/DTLS handshake. As a default, SHA-256 is assumed as a HKDF algorithm for algorithms 
+using 128-bit key sizes and SHA384 for 256-bit key sizes. 
+
+COSE uses key ids to allow finding the appropriate security context. Those key IDs conceptually
+correspond to CIDs, as described in {{cose_ext}}.
+
+# TLS Ciphersuite to COSE/OSCORE Algorithm Mapping
+
+~~~
+TLS Ciphersuite   | COSE/OSCORE Algorithm
+------------------+--------------------------------------------------
+AES_128_CCM_8     | AES-CCM w/128-bit key, 64-bit tag, 13-byte nonce
+AES_256_CCM_8     | AES-CCM w/256-bit key, 64-bit tag, 13-byte nonce
+CHACHA20_POLY1305 | ChaCha20/Poly1305 w/256-bit key, 128-bit tag
+AES_128_CCM       | AES-CCM w/128-bit key, 128-bit tag, 13-byte nonce
+AES_256_CCM       | AES-CCM w/256-bit key, 128-bit tag, 13-byte nonce
+AES_128_GCM       | AES-GCM w/128-bit key, 128-bit tag
+AES_256_GCM       | AES-GCM w/256-bit key, 128-bit tag
+~~~
+{: #algo-mapping title="TLS Ciphersuite to COSE/OSCORE Algorithm Mapping"}
+
+# TLS Extensions 
+
+## The "oscore_connection_id" Extension {#oscore_cid}
 
 This document defines the "oscore_connection_id" extension, which is used in
 ClientHello and ServerHello messages. It is used only for establishing the 
-client's OSCORE Sender ID and the server's OSCORE Sender ID. The client's OSCORE Sender 
-ID maps to the CID provided by the server in the ServerHello and the server's OSCORE 
-Sender ID maps to the CID provided by the client in the ClientHello.
+OSCORE Sender ID and the OSCORE Recipient ID. The OSCORE Sender 
+ID maps to the CID provided by the server in the ServerHello and the OSCORE Recipient ID
+maps to the CID provided by the client in the ClientHello.
 
 The negotiation mechanism follows the procedure used in {{I-D.ietf-tls-dtls-connection-id}}
 with the exception that the negotiated CIDs agreed with the "oscore_connection_id" extension 
@@ -877,6 +883,7 @@ DTLS as well as with TLS when those protocols are used at the application layer.
   
 The extension type is specified as follows.
 
+~~~
 enum {
    oscore_connection_id(TBD), (65535)
 } ExtensionType;
@@ -884,20 +891,93 @@ enum {
 struct {
    opaque cid<0..2^8-1>;
 } ConnectionId;
+~~~
+{: #oscore_connection_id title="The 'oscore_connection_id' Extension"}
 
 Note: This extension allows a client and a server to determine whether an OSCORE security context 
 should be established.  
 
-A future version of this specification may extend the negotiation capabilities. 
+## The "cose_ext" Extension {#cose_ext}
 
+This document defines the "cose_ext" extension, which is used in
+ClientHello and ServerHello messages. It is used only for establishing the key identifiers, AEAD algorithms, as well 
+as keying material for use with application layer protection using COSE. The CID provided by the server in the ServerHello 
+maps to the COSE kid transmitted from the client to the server and the CID provided by the client in the ClientHello maps to the 
+COSE kid transmitted from the server to the client. 
+
+The negotiation mechanism follows the procedure used in {{I-D.ietf-tls-dtls-connection-id}}
+with the exception that the negotiated CIDs agreed with the "cose_ext" extension 
+is only used with COSE and does not impact the record layer format of the DTLS/TLS 
+payloads nor the MAC calculation used by DTLS/TLS. As such, this extension can be used with 
+DTLS as well as with TLS when those protocols are used at the application layer. 
+  
+The extension type is specified as follows.
+
+~~~
+enum {
+   oscore_connection_id(TBD), (65535)
+} ExtensionType;
+
+struct {
+   opaque cid<0..2^8-1>;
+} ConnectionId;
+~~~
+{: #cose_ext_fig title="The 'cose_ext' Extension"}
+
+Note: This extension allows a client and a server to determine whether an COSE security context 
+should be established.  
 
 # IANA Considerations
 
 ## "oscore_connection_id" TLS extension
 
-IANA is requested to allocate an entry to the existing TLS
+IANA is requested to allocate two entries to the existing TLS
 "ExtensionType Values" registry, defined in {{RFC5246}}, for
-oscore_connection_id(TBD) defined in this document.
+oscore_connection_id(TBD1) and cose_ext(TBD2) defined in this document, 
+as described in the table below.
+
+~~~~
+Value Extension Name       TLS 1.3  DTLS Only  Recommended  Reference
+-----------------------------------------------------------------------
+TBD1   oscore_connection_id   Y          N          N       [[This doc]]
+TBD2   cose_ext               Y          N          N       [[This doc]]
+~~~~
+
+Note: The "N" values in the Recommended column are set because these
+extensions are intended only for specific use cases.
+
+
+## TLS Ciphersuite to OSCORE/COSE Algorithm Mapping
+
+IANA is requested to create a new registry for mapping 
+TLS ciphersuites to SCORE/COSE algorithms
+
+An initial mapping can be found in {{algo-mapping}}.
+
+Registration requests are evaluated after a
+   three-week review period on the tls-reg-review@ietf.or mailing list,
+   on the advice of one or more Designated Experts {{RFC8126}}.  However,
+   to allow for the allocation of values prior to publication, the
+   Designated Experts may approve registration once they are satisfied
+   that such a specification will be published.
+
+   Registration requests sent to the mailing list for review should use
+   an appropriate subject 
+   (e.g., "Request to register an TLS - OSCORE/COSE algorithm mapping: example").
+   Registration requests that are undetermined for a period longer than
+   21 days can be brought to the IESG's attention (using the
+   iesg@ietf.org mailing list) for resolution.
+
+   Criteria that should be applied by the Designated Experts includes
+   determining whether the proposed registration duplicates existing
+   functionality, whether it is likely to be of general applicability or
+   whether it is useful only for a single extension, and whether the
+   registration description is clear.
+
+   IANA must only accept registry updates from the Designated Experts
+   and should direct all requests for registration to the review mailing
+   list.
+
 
 ## .well-known URI Registry
 
@@ -1076,3 +1156,41 @@ while (sslEngine.getHandshakeStatus() ==
 # Example ATLS Handshake
 
 [[ EDITOR'S NOTE: For completeness, include a simple full TLS handshake showing the raw binary flights, along with the HTTP request/response/headers. And also the raw hex TLS records showing protocol bits ]]
+
+
+# Alternative Approaches to Application Layer End-to-End Security
+
+End-to-end security at the application layer is increasing seen as a key requirement across multiple applications and services. Some examples of end-to-end security mechanisms are outlined here. All the solutions outlined here have some common characteristics. The solutions:
+
+- do not rely on transport layer security
+- define a new handshake protocol for establishment of a secure end-to-end session
+
+
+## Noise
+
+[Noise] is a framework for cryptographic protocols based on Elliptic Curve Diffie-Hellman (ECDH) key agreement, AEAD encryption, and BLAKE2 and SHA2 hash functions. Noise is currently used by WhatsApp, WireGuard, and Lightning.
+
+The current Noise protocol framework defines mechanisms for proving possession of a private key, but does not define authentication mechanisms. Section 14 "Security Considerations" of Noise states:
+~~~
+it's up to the application to determine whether the remote party's static public key is acceptable
+~~~
+
+## Signal
+
+The [Signal] protocol provides end-to-end encryption and uses EdDSA signatures, Triple Diffie-Hellman handshake for shared secret establishment, and the Double Ratchet Algorithm for key management. It is used by Open Whisper Systems, WhatsApp and Google.
+
+Similar to Noise, Signal does not define an authentication mechanism. The current [X3DH] specification states in Section 4.1 "Authentication":
+
+~~~
+Methods for doing this are outside the scope of this document
+~~~
+
+## Google ALTS
+
+Google's Application Layer Transport Security [ALTS] is a mutual authentication and transport encryption system used for securing Remote Procedure Call (RPC) communications within Google’s infrastructure. ALTS uses an ECDH handshake protocol and a record protocol containing AES encrypted payloads.
+
+## Ephemeral Diffie-Hellman Over COSE (EDHOC)
+
+There is ongoing work to standardise EDHOC {{I-D.selander-ace-cose-ecdhe}}, which defines a SIGMA-I based authenticated key exchange protocol using COSE and CBOR.
+
+
