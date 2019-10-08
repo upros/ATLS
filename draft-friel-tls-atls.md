@@ -624,7 +624,7 @@ to the size of the certificate chain, exceeds the MTU size.
 
 The assumption is that the client will establish a transport layer connection to the server for exchange of HTTP messages. The underlying transport layer connection could be over TCP or TLS. The client will then establish an application layer TLS connection with the server by exchanging TLS records with the server inside HTTP message request and response bodies.
 
-Note that ATLS over HTTP transport addresses a different deployment scenario than HTTP CONNECT proxies. HTTP CONNECT proxy behaviour is compared and contrasted with ATLS in {{ATLS and HTTP CONNECT}}.
+Note that ATLS over HTTP transport addresses a different deployment scenario than HTTP CONNECT proxies. HTTP CONNECT proxy behaviour is compared and contrasted with ATLS in {{atls-and-http-connect}}.
 
 ## Protocol Summary
 
