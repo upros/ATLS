@@ -126,8 +126,8 @@ Encodings for carrying TLS and DTLS payloads are specified for HTTP and CoAP to 
 
 There are multiple scenarios where there is a need for application layer end-to-end security between clients and application services. Two examples include:
 
-- Bootstrapping devices that must connect to HTTP application services across untrusted TLS interception middleboxes
 - Constrained devices connecting via gateways to application services, where different transport layer protocols may be in use on either side of the gateway, with the gateway transcoding between the different transport layer protocols.
+- Bootstrapping devices that must connect to HTTP application services across untrusted TLS interception middleboxes
 
 These two scenarios are described in more detail in {{application-layer-end-to-end-security-use-cases}}.
 
@@ -142,7 +142,7 @@ This document describes how clients and applications can leverage standard TLS s
 
 When TLS or DTLS is used at the application layer we refer to it as Application-Layer TLS, or ATLS. There is, however, no difference to TLS versions used over connection-oriented transports, such as TCP or SCTP. The same is true for DTLS. The difference is mainly in its use and the requirements placed on the underlying transport.
 
-This document defines how ATLS can be used over HTTP {{RFC7230}} {{RFC7540}} and over CoAP. This document does not preclude the use of other transports. However, defining how ATLS can be established over [ZigBee], [Bluetooth], etc. is beyond the scope of this document.
+This document defines how ATLS can be used over HTTP {{RFC7230}} {{RFC7540}} and over CoAP {{RFC7252}}. This document does not preclude the use of other transports. However, defining how ATLS can be established over [ZigBee], [Bluetooth], etc. is beyond the scope of this document.
 
 # Terminology
 
@@ -157,27 +157,6 @@ Application-Layer TLS is referred to as ATLS throughout this document.
 # Application Layer End-to-End Security Use Cases
 
 This section describes describes a few end-to-end use cases in more detail.
-
-## Bootstrapping Devices
-
-There are far more classes of clients being deployed on today's networks than at any time previously. This poses challenges for network administrators who need to manage their network and the clients connecting to their network, and poses challenges for client vendors and client software developers who must ensure that their clients can connect to all required services.
-
-One common example is where a client is deployed on a local domain TCP/IP network that protects its perimeter using a TLS terminating middlebox, and the client needs to establish a secure connection to a service in a different network via the middlebox. This is illustrated in {{bootstrap-device}}.
-
-Traditionally, this has been enabled by the network administrator deploying the necessary certificate authority trusted roots on the client. This can be achieved at scale using standard tools that enable the administrator to automatically push trusted roots out to all client machines in the network from a centralized domain controller. This works for personal computers, laptops and servers running standard Operating Systems that can be centrally managed. This client management process breaks for multiple classes of clients that are being deployed today, there is no standard mechanism for configuring trusted roots on these clients, and there is no standard mechanism for these clients to securely traverse middleboxes.
-
-~~~
-+--------+    C->M TLS    +-----------+   M->S TLS   +---------+
-| Client |--------------->| Middlebox |------------->| Service |
-+--------+                +-----------+              +---------+
-    ^                                                     ^
-    |                                                     |
-    +-----------Client to Service ATLS Connection---------+
-~~~
-{: #bootstrap-device title="Bootstrapping Devices"} 
-
-
-The ATLS mechanism defined in this document enables clients to traverse middleboxes and establish secure connections to services across network domain boundaries. The purpose of this connection may simply be to facilitate a bootstrapping process, for example {{I-D.ietf-anima-bootstrapping-keyinfra}}, whereby the client securely discovers the local domain certificate authorities required to establish a trusted network layer TLS connection to the middlebox.
 
 ## Constrained Devices
 
@@ -217,6 +196,27 @@ The gateway may not be trusted and all messages between the IoT device and the a
     +---------Device to Cloud Service ATLS Connection----------+
 ~~~
  {: #coap-internet title="IoT Internet Gateway"} 
+
+## Bootstrapping Devices
+
+There are far more classes of clients being deployed on today's networks than at any time previously. This poses challenges for network administrators who need to manage their network and the clients connecting to their network, and poses challenges for client vendors and client software developers who must ensure that their clients can connect to all required services.
+
+One common example is where a client is deployed on a local domain TCP/IP network that protects its perimeter using a TLS terminating middlebox, and the client needs to establish a secure connection to a service in a different network via the middlebox. This is illustrated in {{bootstrap-device}}.
+
+Traditionally, this has been enabled by the network administrator deploying the necessary certificate authority trusted roots on the client. This can be achieved at scale using standard tools that enable the administrator to automatically push trusted roots out to all client machines in the network from a centralized domain controller. This works for personal computers, laptops and servers running standard Operating Systems that can be centrally managed. This client management process breaks for multiple classes of clients that are being deployed today, there is no standard mechanism for configuring trusted roots on these clients, and there is no standard mechanism for these clients to securely traverse middleboxes.
+
+~~~
++--------+    C->M TLS    +-----------+   M->S TLS   +---------+
+| Client |--------------->| Middlebox |------------->| Service |
++--------+                +-----------+              +---------+
+    ^                                                     ^
+    |                                                     |
+    +-----------Client to Service ATLS Connection---------+
+~~~
+{: #bootstrap-device title="Bootstrapping Devices"} 
+
+
+The ATLS mechanism defined in this document enables clients to traverse middleboxes and establish secure connections to services across network domain boundaries. The purpose of this connection may simply be to facilitate a bootstrapping process, for example {{I-D.ietf-anima-bootstrapping-keyinfra}}, whereby the client securely discovers the local domain certificate authorities required to establish a trusted network layer TLS connection to the middlebox.
 
 # ATLS Goals
 
@@ -568,10 +568,63 @@ Another typical network deployment is illustrated in {{http-arch}}. It shows a c
 ~~~
 {: #atls-session title="ATLS Session Establishment"}
 
+# ATLS over CoAP Transport
+
+To carry TLS messages over CoAP {{RFC7252}} it is recommended to use Confirmable messages while 
+DTLS payloads may as well use non-confirmable messages. The exchange pattern in CoAP 
+uses the following style: A request from the CoAP client to the CoAP server uses a POST 
+with the ATLS message contained in the payload of the request. An ATLS response is returned
+by the CoAP server to the CoAP client in a 2.04 (Changed) message. 
+
+When DTLS messages are conveyed in CoAP over UDP then the DDoS protection offered by DTLS MAY be used instead of 
+replicating the functionality at the CoAP layer. If TLS is conveyed in CoAP over UDP then 
+DDoS protection by CoAP has to be utilized. Carrying ATLS messages in CoAP over TCP does not 
+require any additional DDoS protection. 
+
+The URI path used by ATLS is "/.well-known/atls". 
+
+{{coap-example} shows a TLS 1.3 handshake inside CoAP graphically. 
+
+~~~
+    Client    Server
+      |          |
+      +--------->| Header: POST (Code=0.02)
+      |   POST   | Uri-Path: "/.well-known/atls"
+      |          | Content-Format: application/atls
+      |          | Payload: ATLS (ClientHello)
+      |          |
+      |<---------+ Header: 2.04 Changed
+      |   2.04   | Content-Format: application/atls
+      |          | Payload: ATLS (ServerHello, 
+      |          | {EncryptedExtensions}, {CertificateRequest*}
+      |          | {Certificate*}, {CertificateVerify*} {Finished})
+      |          |
+      +--------->| Header: POST (Code=0.02)
+      |   POST   | Uri-Path: "/.well-known/atls"
+      |          | Content-Format: application/atls
+      |          | Payload: ATLS ({Certificate*}, 
+      |          | {CertificateVerify*}, {Finished})
+      |          |
+      |<---------+ Header: 2.04 Changed
+      |   2.04   |
+      |          |
+~~~
+{: #coap-example title="Transferring ATLS in CoAP "}
+
+Note that application data can already be sent by the server in the 
+second message and by the client in the third message, in case of the 
+full TLS 1.3 handshake. In case of the 0-RTT handshake application data 
+can be sent earlier. To mix different media types in the same CoAP payload
+the application/multipart-core content type is used. 
+
+Note also that CoAP blockwise transfer MAY be used if the payload size, for example due
+to the size of the certificate chain, exceeds the MTU size.
 
 # ATLS over HTTP Transport
 
 The assumption is that the client will establish a transport layer connection to the server for exchange of HTTP messages. The underlying transport layer connection could be over TCP or TLS. The client will then establish an application layer TLS connection with the server by exchanging TLS records with the server inside HTTP message request and response bodies.
+
+Note that ATLS over HTTP transport addresses a different deployment scenario than HTTP CONNECT proxies. HTTP CONNECT proxy behaviour is compared and contrasted with ATLS in {{ATLS and HTTP CONNECT}}.
 
 ## Protocol Summary
 
@@ -645,137 +698,7 @@ The server handles the second flight, establishes the ATLS session, and replies 
 Content-Type: application/atls
 
 <binary TLS server flight 2 records>
-~~~
-
-## ATLS and HTTP CONNECT
-
-It is worthwhile comparing and contrasting ATLS with HTTP CONNECT tunneling.
-
-First, let us introduce some terminology:
-
-- HTTP Proxy: A HTTP Proxy operates at the application layer, handles HTTP CONNECT messages from clients, and opens tunnels to remote origin servers on behalf of clients. If a client establishes a tunneled TLS connection to the origin server, the HTTP Proxy does not attempt to intercept or inspect the HTTP messages exchanged between the client and the server
-
-- middlebox: A middlebox operates at the transport layer, terminates TLS connections from clients, and originates new TLS connections to services. A middlebox inspects all messages sent between clients and services. Middleboxes are generally completely transparent to applications, provided that the necessary PKI root Certificate Authority is installed in the client's trust store.
-
-HTTP Proxies and middleboxes are logically separate entities and one or both of these may be deployed in a network.
-
-HTTP CONNECT is used by clients to instruct a HTTP Forward Proxy deployed in the local domain to open up a tunnel to a remote origin server that is typically deployed in a different domain. Assuming that TLS transport is used between both client and proxy, and proxy and origin server, the network architecture is as illustrated in {{connect-tunnel}}. Once the proxy opens the transport tunnel to the service, the client establishes an end-to-end TLS session with the service, and the proxy is blindly transporting TLS records (the C->S TLS session records) between the client and the service. From the client perspective, it is tunneling a TLS session to the service inside the TLS session it has established to the proxy (the C->P TLS session). No middlebox is attempting to intercept or inspect the HTTP messages between the client and the service.
-
-~~~
-       +----------+        +----------+         
-       | C->S HTTP|        | C->S HTTP|
-       +----------+        +----------+
-       | C->S TLS |        | C->S TLS |
-       +----------+        +----------+
-       | C->P TLS |        | P->S TCP |
-       +----------+        +----------+
-       | C->P TCP |
-       +----------+
-
-+--------+      +------------+      +---------+
-| Client |----->| HTTP Proxy |----->| Service |
-+--------+      +------------+      +---------+
-~~~
-{: #connect-tunnel title="HTTP Proxy transport layers"}
-
-A more complex network topology where the network operator has both a HTTP Proxy and a middlebox deployed is illustrated in {{middlebox}}. In this scenario, the proxy has tunneled the TLS session from the client towards the origin server, however the middlebox is intercepting and terminating this TLS session. A TLS session is established between the client and the middlebox (C->M TLS), and not end-to-end between the client and the server. It can clearly be seen that HTTP CONNECT and HTTP Proxies serve completely different functions than middleboxes.
-
-Additionally, the fact that the TLS session is established between the client and the middlebox can be problematic for two reasons:
-
-- the middle box is inspecting traffic that is sent between the client and the service
-- the client may not have the necessary PKI root Certificate Authority installed that would enable it to validate the TLS connection to the middlebox. This is the scenario outlined in {{bootstrapping-devices}}.
-
-
-
-~~~
-       +----------+        +----------+       +----------+
-       | C->S HTTP|        | C->S HTTP|       | C->S HTTP|
-       +----------+        +----------+       +----------+
-       | C->M TLS |        | C->M TLS |       | M->S TLS |
-       +----------+        +----------+       +----------+
-       | C->P TLS |        | P->M TCP |       | M->S TCP |
-       +----------+        +----------+       +----------+
-       | C->P TCP |
-       +----------+
-
-+--------+      +------------+      +-----------+      +---------+
-| Client |----->| HTTP Proxy |----->| Middlebox |----->| Service |
-+--------+      +------------+      +-----------+      +---------+
-~~~
-{: #middlebox title="HTTP Proxy and middlebox transport layers"}
-
-As HTTP CONNECT can be used to establish a tunneled TLS connection, one hypothetical solution to this middlebox issue is for the client to issue a HTTP CONNECT command to a HTTP Reverse Proxy deployed in front of the origin server. This solution is not practical for several reasons:
-
-- if there is a local domain HTTP Forward Proxy deployed, this would result in the client doing a first HTTP CONNECT to get past the Forward Proxy, and then a second HTTP CONNECT to get past the Reverse Proxy. No client or client library supports the concept of HTTP CONNECT inside HTTP CONNECT.
-
-- if there is no local domain HTTP Proxy deployed, the client still has to do a HTTP CONNECT to the HTTP Reverse Proxy. This breaks with standard and expected HTTP CONNECT operation, as HTTP CONNECT is only ever called if there is a local domain proxy.
-
-- clients cannot generate CONNECT from XHR in web applications.
-
-- this would require the deployment of a Reverse Proxy in front of the origin server, or else support of the HTTP CONNECT method in standard web frameworks. This is not an elegant design.
-
-- using HTTP CONNECT with HTTP 1.1 to a Reverse Proxy will break middleboxes inspecting HTTP traffic, as the middlebox would see TLS records when it expects to see HTTP payloads.
-
-In contrast to trying to force HTTP CONNECT to address a problem for which it was not designed to address, and having to address all the issues just outlined; ATLS is specifically designed to address the middlebox issue in a simple, easy to develop, and easy to deploy fashion.
-
-- ATLS works seamlessly with HTTP Proxy deployments
-- no changes are required to HTTP CONNECT semantics
-- no changes are required to HTTP libraries or stacks
-- no additional Reverse Proxy is required to be deployed in front of origin servers
-
-It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptually sound solution, the solution still ultimately results in encrypted traffic traversing the middlebox that the middlebox cannot intercept and inspect. That is ultimately what ATLS results in - traffic traversing the middle box that the middlebox cannot intercept and inspect. Therefore, from a middlebox perspective, the differences between the two solutions are in the areas of solution complexity and protocol semantics. It is clear that ATLS is a simpler, more elegant solution that HTTP CONNECT.
-
-# ATLS over CoAP Transport
-
-To carry TLS messages over CoAP {{RFC7252}} it is recommended to use Confirmable messages while 
-DTLS payloads may as well use non-confirmable messages. The exchange pattern in CoAP 
-uses the following style: A request from the CoAP client to the CoAP server uses a POST 
-with the ATLS message contained in the payload of the request. An ATLS response is returned
-by the CoAP server to the CoAP client in a 2.04 (Changed) message. 
-
-When DTLS messages are conveyed in CoAP over UDP then the DDoS protection offered by DTLS MAY be used instead of 
-replicating the functionality at the CoAP layer. If TLS is conveyed in CoAP over UDP then 
-DDoS protection by CoAP has to be utilized. Carrying ATLS messages in CoAP over TCP does not 
-require any additional DDoS protection. 
-
-The URI path used by ATLS is "/.well-known/atls". 
-
-{{coap-example} shows a TLS 1.3 handshake inside CoAP graphically. 
-
-~~~
-    Client    Server
-      |          |
-      +--------->| Header: POST (Code=0.02)
-      |   POST   | Uri-Path: "/.well-known/atls"
-      |          | Content-Format: application/atls
-      |          | Payload: ATLS (ClientHello)
-      |          |
-      |<---------+ Header: 2.04 Changed
-      |   2.04   | Content-Format: application/atls
-      |          | Payload: ATLS (ServerHello, 
-      |          | {EncryptedExtensions}, {CertificateRequest*}
-      |          | {Certificate*}, {CertificateVerify*} {Finished})
-      |          |
-      +--------->| Header: POST (Code=0.02)
-      |   POST   | Uri-Path: "/.well-known/atls"
-      |          | Content-Format: application/atls
-      |          | Payload: ATLS ({Certificate*}, 
-      |          | {CertificateVerify*}, {Finished})
-      |          |
-      |<---------+ Header: 2.04 Changed
-      |   2.04   |
-      |          |
-~~~
-{: #coap-example title="Transferring ATLS in CoAP "}
-
-Note that application data can already be sent by the server in the 
-second message and by the client in the third message, in case of the 
-full TLS 1.3 handshake. In case of the 0-RTT handshake application data 
-can be sent earlier. To mix different media types in the same CoAP payload
-the application/multipart-core content type is used. 
-
-Note also that CoAP blockwise transfer MAY be used if the payload size, for example due
-to the size of the certificate chain, exceeds the MTU size. 
+~~~ 
 
 # Key Exporting and Application Data Encryption {#key-derivation}
 
@@ -1155,10 +1078,83 @@ while (sslEngine.getHandshakeStatus() ==
 // Rinse and repeat!
 ~~~
 
-# Example ATLS Handshake
+# ATLS and HTTP CONNECT
 
-[[ EDITOR'S NOTE: For completeness, include a simple full TLS handshake showing the raw binary flights, along with the HTTP request/response/headers. And also the raw hex TLS records showing protocol bits ]]
+It is worthwhile comparing and contrasting ATLS with HTTP CONNECT tunneling.
 
+First, let us introduce some terminology:
+
+- HTTP Proxy: A HTTP Proxy operates at the application layer, handles HTTP CONNECT messages from clients, and opens tunnels to remote origin servers on behalf of clients. If a client establishes a tunneled TLS connection to the origin server, the HTTP Proxy does not attempt to intercept or inspect the HTTP messages exchanged between the client and the server
+
+- middlebox: A middlebox operates at the transport layer, terminates TLS connections from clients, and originates new TLS connections to services. A middlebox inspects all messages sent between clients and services. Middleboxes are generally completely transparent to applications, provided that the necessary PKI root Certificate Authority is installed in the client's trust store.
+
+HTTP Proxies and middleboxes are logically separate entities and one or both of these may be deployed in a network.
+
+HTTP CONNECT is used by clients to instruct a HTTP Forward Proxy deployed in the local domain to open up a tunnel to a remote origin server that is typically deployed in a different domain. Assuming that TLS transport is used between both client and proxy, and proxy and origin server, the network architecture is as illustrated in {{connect-tunnel}}. Once the proxy opens the transport tunnel to the service, the client establishes an end-to-end TLS session with the service, and the proxy is blindly transporting TLS records (the C->S TLS session records) between the client and the service. From the client perspective, it is tunneling a TLS session to the service inside the TLS session it has established to the proxy (the C->P TLS session). No middlebox is attempting to intercept or inspect the HTTP messages between the client and the service.
+
+~~~
+       +----------+        +----------+         
+       | C->S HTTP|        | C->S HTTP|
+       +----------+        +----------+
+       | C->S TLS |        | C->S TLS |
+       +----------+        +----------+
+       | C->P TLS |        | P->S TCP |
+       +----------+        +----------+
+       | C->P TCP |
+       +----------+
+
++--------+      +------------+      +---------+
+| Client |----->| HTTP Proxy |----->| Service |
++--------+      +------------+      +---------+
+~~~
+{: #connect-tunnel title="HTTP Proxy transport layers"}
+
+A more complex network topology where the network operator has both a HTTP Proxy and a middlebox deployed is illustrated in {{middlebox}}. In this scenario, the proxy has tunneled the TLS session from the client towards the origin server, however the middlebox is intercepting and terminating this TLS session. A TLS session is established between the client and the middlebox (C->M TLS), and not end-to-end between the client and the server. It can clearly be seen that HTTP CONNECT and HTTP Proxies serve completely different functions than middleboxes.
+
+Additionally, the fact that the TLS session is established between the client and the middlebox can be problematic for two reasons:
+
+- the middle box is inspecting traffic that is sent between the client and the service
+- the client may not have the necessary PKI root Certificate Authority installed that would enable it to validate the TLS connection to the middlebox. This is the scenario outlined in {{bootstrapping-devices}}.
+
+
+
+~~~
+       +----------+        +----------+       +----------+
+       | C->S HTTP|        | C->S HTTP|       | C->S HTTP|
+       +----------+        +----------+       +----------+
+       | C->M TLS |        | C->M TLS |       | M->S TLS |
+       +----------+        +----------+       +----------+
+       | C->P TLS |        | P->M TCP |       | M->S TCP |
+       +----------+        +----------+       +----------+
+       | C->P TCP |
+       +----------+
+
++--------+      +------------+      +-----------+      +---------+
+| Client |----->| HTTP Proxy |----->| Middlebox |----->| Service |
++--------+      +------------+      +-----------+      +---------+
+~~~
+{: #middlebox title="HTTP Proxy and middlebox transport layers"}
+
+As HTTP CONNECT can be used to establish a tunneled TLS connection, one hypothetical solution to this middlebox issue is for the client to issue a HTTP CONNECT command to a HTTP Reverse Proxy deployed in front of the origin server. This solution is not practical for several reasons:
+
+- if there is a local domain HTTP Forward Proxy deployed, this would result in the client doing a first HTTP CONNECT to get past the Forward Proxy, and then a second HTTP CONNECT to get past the Reverse Proxy. No client or client library supports the concept of HTTP CONNECT inside HTTP CONNECT.
+
+- if there is no local domain HTTP Proxy deployed, the client still has to do a HTTP CONNECT to the HTTP Reverse Proxy. This breaks with standard and expected HTTP CONNECT operation, as HTTP CONNECT is only ever called if there is a local domain proxy.
+
+- clients cannot generate CONNECT from XHR in web applications.
+
+- this would require the deployment of a Reverse Proxy in front of the origin server, or else support of the HTTP CONNECT method in standard web frameworks. This is not an elegant design.
+
+- using HTTP CONNECT with HTTP 1.1 to a Reverse Proxy will break middleboxes inspecting HTTP traffic, as the middlebox would see TLS records when it expects to see HTTP payloads.
+
+In contrast to trying to force HTTP CONNECT to address a problem for which it was not designed to address, and having to address all the issues just outlined; ATLS is specifically designed to address the middlebox issue in a simple, easy to develop, and easy to deploy fashion.
+
+- ATLS works seamlessly with HTTP Proxy deployments
+- no changes are required to HTTP CONNECT semantics
+- no changes are required to HTTP libraries or stacks
+- no additional Reverse Proxy is required to be deployed in front of origin servers
+
+It is also worth noting that if HTTP CONNECT to a Reverse Proxy were a conceptually sound solution, the solution still ultimately results in encrypted traffic traversing the middlebox that the middlebox cannot intercept and inspect. That is ultimately what ATLS results in - traffic traversing the middle box that the middlebox cannot intercept and inspect. Therefore, from a middlebox perspective, the differences between the two solutions are in the areas of solution complexity and protocol semantics. It is clear that ATLS is a simpler, more elegant solution that HTTP CONNECT.
 
 # Alternative Approaches to Application Layer End-to-End Security
 
