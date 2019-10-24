@@ -2,7 +2,7 @@
 stand_alone: yes
 ipr: trust200902
 docname: draft-friel-tls-atls-latest
-cat: std
+cat: info
 title: "Application-Layer TLS"
 abbrev: ATLS
 coding: utf-8
