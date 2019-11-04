@@ -974,7 +974,7 @@ For use in the IoT environment the considerations described in {{RFC7925}} apply
 
 # Pseudo Code
 
-This appendix gives both C and Java pseudo code illustrating how to inject and extract raw TLS records from a TLS software stack. Please not that this is illustrative, non-functional pseudo code that does not compile. Functioning proof-of-concept code is available on the following public repository [[ EDITOR'S NOTE: Add the URL here ]].
+This appendix gives both C and Java pseudo code illustrating how to inject and extract raw TLS records from a TLS software stack. Please note that this is illustrative, non-functional pseudo code that does not compile.
 
 ## OpenSSL
 
