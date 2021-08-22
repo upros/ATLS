@@ -654,6 +654,36 @@ This document does not define any new HTTP status codes, and does not specify ad
 
 The application service needs to track multiple client application layer TLS sessions so that it can correlate TLS records received in HTTP message bodies with the appropriate TLS session. The application service should use stateful cookies {{RFC6265}} in order to achieve this as recommended in {{I-D.ietf-httpbis-bcp56bis}}.
 
+[[TODO]] An alternative approach for session tracking is to use a RESTful model and create new resoruces to track sessions.
+
+For example:
+
+    Client    Server
+      |          |
+      +--------->| Header: POST (Code=0.02)
+      |   POST   | Uri-Path: "/.well-known/atls"
+      |          | Content-Format: application/atls
+      |          | Payload: ATLS (ClientHello)
+      |          |
+      |<---------+ Header: 2.01 Created
+      |   2.01   | Content-Format: application/atls
+      |          | Location-Path: /RaNdOm
+      |          | Payload: ATLS (ServerHello,
+      |          | {EncryptedExtensions}, {CertificateRequest*}
+      |          | {Certificate*}, {CertificateVerify*} {Finished})
+      |          |
+      +--------->| Header: POST (Code=0.02)
+      |   POST   | Uri-Path: "/RaNdOm"
+      |          | Content-Format: application/atls
+      |          | Payload: ATLS ({Certificate*},
+      |          | {CertificateVerify*}, {Finished})
+      |          |
+      |<---------+ Header: 2.04 Changed
+      |   2.04   |
+      |          |
+
+This may align bettern with CoAP implementations. 
+
 ## Session Establishment and Key Exporting
 
 It is recommended that applications using ATLS over HTTP transport only use ATLS for session establishment and key exchange, resulting in only 2 ATLS RTTs between the client and the application service.
